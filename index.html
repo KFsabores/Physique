@@ -323,31 +323,115 @@
             font-size: 1.1rem;
         }
 
-        .presence-badge {
-            background: var(--accent-color);
-            color: #000;
-            padding: 6px 16px;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            font-weight: 700;
+        /* Modais */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
 
-        .btn-presenca {
-            background: var(--accent-color);
-            color: #000;
-            padding: 8px 16px;
-            font-size: 0.85rem;
+        .modal-content {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 2.5rem;
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--neon-glow);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
-        .sheet-status {
-            font-size: 0.85rem;
-            color: var(--accent-color);
-            margin-bottom: 15px;
-            font-weight: 600;
+        .modal-header {
             display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            color: var(--accent-color);
+        }
+
+        /* Alertas */
+        .alert-banner {
+            background: rgba(255, 71, 87, 0.2);
+            border: 1px solid #ff4757;
+            color: #ff4757;
+            padding: 12px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* Indicadores Financeiros */
+        .student-item.paid { border-left: 5px solid #2ed573; }
+        .student-item.unpaid { border-left: 5px solid #ff4757; }
+
+        .finance-status {
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        .status-paid { color: #2ed573; }
+        .status-unpaid { color: #ff4757; }
+
+        /* Botões de Horários */
+        .presence-options {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-time {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            border-radius: 10px;
+            background: var(--input-bg);
+            color: var(--accent-color);
+            border: 1px solid var(--border-color);
+            flex: 1;
+        }
+
+        .btn-time:hover { background: var(--accent-color); color: #000; }
+
+        /* Ações Rápidas */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .btn-action {
+            display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 8px;
+            padding: 15px;
+            border-radius: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            font-size: 0.8rem;
         }
+
+        .btn-action span { font-size: 1.8rem; color: var(--accent-color); }
+        .btn-action:hover { border-color: var(--accent-color); box-shadow: var(--neon-glow); }
 
         #obsPreview {
             background: var(--input-bg);
@@ -400,44 +484,148 @@
                 <button id="logoutBtn" class="btn-logout">Sair</button>
             </div>
         </div>
+
+        <!-- Banner de Alerta Financeiro -->
+        <div id="financialAlert" class="alert-banner" onclick="openFinanceModal()">
+            <span>⚠️ <strong id="unpaidCount">0</strong> alunos com pagamento pendente este mês.</span>
+            <span class="material-symbols-outlined">chevron_right</span>
+        </div>
+
+        <!-- Ações Rápidas -->
+        <div class="quick-actions">
+            <button class="btn-action" onclick="openModal('modalNewStudent')">
+                <span class="material-symbols-outlined">person_add</span>
+                Novo Aluno
+            </button>
+            <button class="btn-action" onclick="openModal('modalObservation')">
+                <span class="material-symbols-outlined">edit_note</span>
+                Acompanhamento
+            </button>
+            <button class="btn-action" onclick="openModal('modalEvaluation')">
+                <span class="material-symbols-outlined">vital_signs</span>
+                Avaliação Física
+            </button>
+            <button class="btn-action" onclick="openModal('modalFinance')">
+                <span class="material-symbols-outlined">payments</span>
+                Financeiro
+            </button>
+            <button class="btn-action" onclick="openModal('modalReports')">
+                <span class="material-symbols-outlined">monitoring</span>
+                Relatórios
+            </button>
+        </div>
+
         <div class="sheet-status" id="sheetStatus">🔄 Conectando à planilha...</div>
         
-        <div class="dashboard">
-            <!-- Card Cadastro de Aluno -->
-            <div class="card">
-                <h3><span class="material-symbols-outlined">person_add</span> Novo Aluno</h3>
-                <div class="form-group">
-                    <input type="text" id="studentName" placeholder="Nome completo" autocomplete="off">
-                    <input type="text" id="studentPhone" placeholder="Telefone (opcional)">
-                    <input type="text" id="studentGoal" placeholder="Objetivo (ex: hipertrofia, emagrecimento)">
-                    <button id="addStudentBtn">➕ Adicionar Aluno</button>
+        <!-- View Principal: Lista de Alunos -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3><span class="material-symbols-outlined">fitness_center</span> Alunos & Presença</h3>
+                <button id="syncSheetBtn" class="btn-secondary" style="padding: 8px 15px; font-size: 0.8rem;">🔄 Sincronizar</button>
+            </div>
+            <div id="studentsListContainer" class="student-list">
+                <div style="text-align:center; padding:20px;">Carregando alunos...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Novo Aluno -->
+    <div id="modalNewStudent" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Aluno</h3>
+                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalNewStudent')">close</span>
+            </div>
+            <div class="form-group">
+                <input type="text" id="studentName" placeholder="Nome completo" autocomplete="off">
+                <input type="text" id="studentPhone" placeholder="Telefone (opcional)">
+                <input type="text" id="studentGoal" placeholder="Objetivo (ex: emagrecimento)">
+                <button id="addStudentBtn">➕ Salvar Aluno</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Acompanhamento -->
+    <div id="modalObservation" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Notas de Treino</h3>
+                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalObservation')">close</span>
+            </div>
+            <div class="form-group">
+                <select id="studentSelectReport" class="student-select">
+                    <option value="">-- Selecione um aluno --</option>
+                </select>
+                <textarea id="observationText" rows="4" placeholder="Observações do treino de hoje..."></textarea>
+                <button id="addObservationBtn">📝 Salvar Evolução</button>
+                <div id="lastObservations" style="margin-top: 15px; font-size:0.85rem; background:rgba(0,0,0,0.2); border-radius: 15px; padding: 15px;">
+                    <strong>Últimas notas:</strong>
+                    <div id="obsPreview" style="margin-top:10px;">-</div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Card Lista de Alunos + Presença -->
-            <div class="card">
-                <h3><span class="material-symbols-outlined">fitness_center</span> Alunos & Marcar Presença</h3>
-                <div id="studentsListContainer" class="student-list">
-                    <div style="text-align:center; padding:20px;">Carregando alunos...</div>
-                </div>
-                <button id="syncSheetBtn" class="btn-secondary" style="margin-top:15px;">🔄 Sincronizar planilha</button>
+    <!-- MODAL: Avaliação Física -->
+    <div id="modalEvaluation" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Avaliação Antropométrica</h3>
+                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalEvaluation')">close</span>
             </div>
-
-            <!-- Card Acompanhamento & Relatório -->
-            <div class="card">
-                <h3><span class="material-symbols-outlined">assessment</span> Acompanhamento</h3>
-                <div class="form-group">
-                    <select id="studentSelectReport">
-                        <option value="">-- Selecione um aluno --</option>
-                    </select>
-                    <textarea id="observationText" rows="2" placeholder="Observações do treino / evolução..."></textarea>
-                    <button id="addObservationBtn">📝 Salvar observação</button>
-                    <button id="generateReportBtn" class="btn-relatorio">📄 Gerar Relatório (PDF)</button>
-                    <div id="lastObservations" style="margin-top: 12px; font-size:0.8rem; background:#ecf3f1; border-radius: 16px; padding: 10px;">
-                        <strong>Últimas notas:</strong>
-                        <div id="obsPreview">-</div>
-                    </div>
+            <div class="form-group" id="evalForm">
+                <select id="studentSelectEval" class="student-select">
+                    <option value="">-- Selecione um aluno --</option>
+                </select>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="number" id="evalPeso" placeholder="Peso (kg)" step="0.1">
+                    <input type="number" id="evalAltura" placeholder="Altura (cm)" step="1">
                 </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="number" id="evalCintura" placeholder="Cintura (cm)">
+                    <input type="number" id="evalQuadril" placeholder="Quadril (cm)">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="number" id="evalBraco" placeholder="Braço D (cm)">
+                    <input type="number" id="evalCoxa" placeholder="Coxa D (cm)">
+                </div>
+                <textarea id="evalNotas" placeholder="Notas adicionais..."></textarea>
+                <button id="saveEvalBtn">💾 Salvar Avaliação</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Financeiro -->
+    <div id="modalFinance" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Controle Financeiro</h3>
+                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalFinance')">close</span>
+            </div>
+            <div id="financeList" class="student-list">
+                <!-- Lista de pagamentos -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Relatórios -->
+    <div id="modalReports" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Relatórios e Estatísticas</h3>
+                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalReports')">close</span>
+            </div>
+            <div class="form-group">
+                <p style="color:var(--text-secondary); font-size:0.9rem;">Relatório Individual (Evolução + Presenças)</p>
+                <select id="studentSelectReportPDF" class="student-select">
+                    <option value="">-- Selecione um aluno --</option>
+                </select>
+                <button id="generateReportBtn" style="margin-bottom: 20px;">📄 Gerar PDF Individual</button>
+                
+                <hr style="border:0; border-top:1px solid var(--border-color); margin-bottom:20px;">
+                
+                <p style="color:var(--text-secondary); font-size:0.9rem;">Relatório Geral (Fluxo de Alunos)</p>
+                <button id="generateGeneralReportBtn" class="btn-secondary">📊 Gerar Relatório de Fluxo</button>
             </div>
         </div>
     </div>
@@ -448,7 +636,13 @@
     let currentUser = null;         // usuário logado (firebase/google)
     let accessToken = null;         // token OAuth para Sheets API
     let spreadsheetId = null;       // ID da planilha do professor
-    let sheetDataCache = { students: [], attendances: [], observations: [] };
+    let sheetDataCache = { 
+        students: [], 
+        attendances: [], 
+        observations: [], 
+        evaluations: [], 
+        finance: [] 
+    };
     
     // Configuração de Tema
     function initTheme() {
@@ -478,7 +672,9 @@
     const SHEET_NAMES = {
         STUDENTS: "Alunos",
         ATTENDANCE: "Presencas",
-        OBSERVATIONS: "Observacoes"
+        OBSERVATIONS: "Observacoes",
+        EVALUATIONS: "Avaliacoes",
+        FINANCE: "Financeiro"
     };
 
     // Google API client carregado
@@ -653,10 +849,14 @@
     async function initSheetHeaders() {
         // Alunos: ID, Nome, Telefone, Objetivo, DataCadastro
         await updateSheetRange(SHEET_NAMES.STUDENTS, 'A1:E1', [['ID','Nome','Telefone','Objetivo','DataCadastro']]);
-        // Presenças: ID, AlunoID, Data, Status
-        await updateSheetRange(SHEET_NAMES.ATTENDANCE, 'A1:D1', [['ID','AlunoID','Data','Status']]);
+        // Presenças: ID, AlunoID, Data, Horário, Status
+        await updateSheetRange(SHEET_NAMES.ATTENDANCE, 'A1:E1', [['ID','AlunoID','Data','Horario','Status']]);
         // Observações: ID, AlunoID, DataHora, Observacao
         await updateSheetRange(SHEET_NAMES.OBSERVATIONS, 'A1:D1', [['ID','AlunoID','DataHora','Observacao']]);
+        // Avaliações: ID, AlunoID, Data, Peso, Altura, IMC, Medidas (Cintura, Quadril, BracoD, BracoE, CoxaD, CoxaE)
+        await updateSheetRange(SHEET_NAMES.EVALUATIONS, 'A1:K1', [['ID','AlunoID','Data','Peso','Altura','IMC','Cintura','Quadril','BracoD','CoxaD','Notas']]);
+        // Financeiro: ID, AlunoID, Data, Valor, MesReferencia
+        await updateSheetRange(SHEET_NAMES.FINANCE, 'A1:E1', [['ID','AlunoID','Data','Valor','MesReferencia']]);
     }
     
     async function updateSheetRange(sheetName, range, values) {
@@ -695,60 +895,163 @@
     async function loadAllDataFromSheet() {
         if (!spreadsheetId) return;
         sheetStatusSpan.innerText = "📥 Carregando dados...";
-        const alunosRows = await readSheet(SHEET_NAMES.STUDENTS);
-        sheetDataCache.students = alunosRows.map((row, idx) => ({ id: row[0] || Date.now()+idx, nome: row[1]||'', telefone: row[2]||'', objetivo: row[3]||'', dataCad: row[4]||'' }));
-        const presencasRows = await readSheet(SHEET_NAMES.ATTENDANCE);
-        sheetDataCache.attendances = presencasRows.map(r => ({ id: r[0], alunoId: r[1], data: r[2], status: r[3] }));
-        const obsRows = await readSheet(SHEET_NAMES.OBSERVATIONS);
-        sheetDataCache.observations = obsRows.map(r => ({ id: r[0], alunoId: r[1], dataHora: r[2], observacao: r[3] }));
-        renderStudentsList();
-        updateStudentSelect();
-        sheetStatusSpan.innerText = `📊 Dados sincronizados (${sheetDataCache.students.length} alunos)`;
+        try {
+            const alunosRows = await readSheet(SHEET_NAMES.STUDENTS);
+            sheetDataCache.students = alunosRows.map((row, idx) => ({ id: row[0] || Date.now()+idx, nome: row[1]||'', telefone: row[2]||'', objetivo: row[3]||'', dataCad: row[4]||'' }));
+            
+            const presencasRows = await readSheet(SHEET_NAMES.ATTENDANCE);
+            sheetDataCache.attendances = presencasRows.map(r => ({ id: r[0], alunoId: r[1], data: r[2], horario: r[3], status: r[4] }));
+            
+            const obsRows = await readSheet(SHEET_NAMES.OBSERVATIONS);
+            sheetDataCache.observations = obsRows.map(r => ({ id: r[0], alunoId: r[1], dataHora: r[2], observacao: r[3] }));
+            
+            const evalRows = await readSheet(SHEET_NAMES.EVALUATIONS);
+            sheetDataCache.evaluations = evalRows.map(r => ({ id: r[0], alunoId: r[1], data: r[2], peso: r[3], altura: r[4], imc: r[5], notas: r[10] }));
+            
+            const financeRows = await readSheet(SHEET_NAMES.FINANCE);
+            sheetDataCache.finance = financeRows.map(r => ({ id: r[0], alunoId: r[1], data: r[2], valor: r[3], mesRef: r[4] }));
+
+            renderStudentsList();
+            updateStudentSelects();
+            checkFinancialStatus();
+            sheetStatusSpan.innerText = `📊 Dados sincronizados (${sheetDataCache.students.length} alunos)`;
+        } catch (e) {
+            console.error("Erro ao carregar dados:", e);
+            sheetStatusSpan.innerText = "❌ Erro na sincronização.";
+        }
     }
-    
+
+    function checkFinancialStatus() {
+        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+        let unpaidCount = 0;
+        const today = new Date().getDate();
+        
+        sheetDataCache.students.forEach(aluno => {
+            const pagoEsteMes = sheetDataCache.finance.some(f => f.alunoId == aluno.id && f.mesRef === currentMonth);
+            const card = document.querySelector(`.student-item[data-id="${aluno.id}"]`);
+            if (card) {
+                card.classList.remove('paid', 'unpaid');
+                card.classList.add(pagoEsteMes ? 'paid' : 'unpaid');
+            }
+            if (!pagoEsteMes) unpaidCount++;
+        });
+
+        // Alerta final de mês (após dia 20)
+        const alertBanner = document.getElementById('financialAlert');
+        if (today >= 20 && unpaidCount > 0) {
+            alertBanner.style.display = 'flex';
+            document.getElementById('unpaidCount').innerText = unpaidCount;
+        } else {
+            alertBanner.style.display = 'none';
+        }
+    }
+
     function renderStudentsList() {
         if (!sheetDataCache.students.length) {
-            studentsListDiv.innerHTML = '<div style="padding:20px; text-align:center;">Nenhum aluno cadastrado. Adicione um!</div>';
+            studentsListDiv.innerHTML = '<div style="padding:20px; text-align:center;">Nenhum aluno cadastrado.</div>';
             return;
         }
         const today = new Date().toISOString().slice(0,10);
         studentsListDiv.innerHTML = sheetDataCache.students.map(aluno => {
-            const jaMarcado = sheetDataCache.attendances.some(a => a.alunoId == aluno.id && a.data === today);
+            const presencasHoje = sheetDataCache.attendances.filter(a => a.alunoId == aluno.id && a.data === today);
+            const ultPagamento = sheetDataCache.finance.filter(f => f.alunoId == aluno.id).sort((a,b) => new Date(b.data) - new Date(a.data))[0];
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            const isPago = sheetDataCache.finance.some(f => f.alunoId == aluno.id && f.mesRef === currentMonth);
+
             return `
-                <div class="student-item">
-                    <div><strong class="student-name">${escapeHtml(aluno.nome)}</strong><br><small>🎯 ${escapeHtml(aluno.objetivo||'Nenhum')}</small></div>
-                    <div>
-                        ${!jaMarcado ? `<button class="btn-presenca" data-id="${aluno.id}" data-name="${aluno.nome}">✔️ Marcar Presença</button>` : `<span class="presence-badge">✅ Presente hoje</span>`}
+                <div class="student-item ${isPago ? 'paid' : 'unpaid'}" data-id="${aluno.id}">
+                    <div style="flex: 1;">
+                        <strong class="student-name">${escapeHtml(aluno.nome)}</strong>
+                        <div class="finance-status ${isPago ? 'status-paid' : 'status-unpaid'}">
+                            ${isPago ? '🟢 Pago' : '🔴 Pendente'} • Úitimo: ${ultPagamento ? new Date(ultPagamento.data).toLocaleDateString() : 'Nenhum'}
+                        </div>
+                    </div>
+                    <div class="presence-options">
+                        ${renderPresenceButtons(aluno.id, presencasHoje)}
                     </div>
                 </div>
             `;
         }).join('');
-        // eventos marcação presença
-        document.querySelectorAll('.btn-presenca').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const alunoId = btn.getAttribute('data-id');
-                const nome = btn.getAttribute('data-name');
-                await marcarPresenca(alunoId, nome);
-            });
-        });
     }
+
+    function renderPresenceButtons(alunoId, presencasHoje) {
+        const horarios = ['17h', '19h', 'Extra'];
+        return horarios.map(h => {
+            const jaMarcado = presencasHoje.some(p => p.horario === h);
+            return jaMarcado 
+                ? `<span class="presence-badge" style="font-size:0.65rem; padding:4px 8px;">✅ ${h}</span>`
+                : `<button class="btn-time" onclick="marcarPresenca('${alunoId}', '${h}')">${h}</button>`;
+        }).join('');
+    }
+
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     
-    async function marcarPresenca(alunoId, nomeAluno) {
+    async function marcarPresenca(alunoId, horario) {
         const today = new Date().toISOString().slice(0,10);
-        const newId = `p_${Date.now()}_${Math.random()}`;
-        await appendRow(SHEET_NAMES.ATTENDANCE, [newId, alunoId, today, 'Presente']);
-        sheetStatusSpan.innerText = `✅ Presença marcada para ${nomeAluno}`;
+        const newId = `p_${Date.now()}`;
+        sheetStatusSpan.innerText = `⏳ Gravando presença (${horario})...`;
+        await appendRow(SHEET_NAMES.ATTENDANCE, [newId, alunoId, today, horario, 'Presente']);
         await loadAllDataFromSheet();
     }
-    
-    function updateStudentSelect() {
-        studentSelectReport.innerHTML = '<option value="">-- Selecione um aluno --</option>';
-        sheetDataCache.students.forEach(aluno => {
-            studentSelectReport.innerHTML += `<option value="${aluno.id}">${escapeHtml(aluno.nome)}</option>`;
+
+    function updateStudentSelects() {
+        const selects = ['studentSelectReport', 'studentSelectEval', 'studentSelectReportPDF'];
+        selects.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.innerHTML = '<option value="">-- Selecione um aluno --</option>' + 
+                sheetDataCache.students.map(a => `<option value="${a.id}">${escapeHtml(a.nome)}</option>`).join('');
         });
-        // atualizar preview de observações
-        const selectedId = studentSelectReport.value;
-        if (selectedId) showObservationsPreview(selectedId);
+    }
+
+    function openFinanceModal() {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const container = document.getElementById('financeList');
+        container.innerHTML = sheetDataCache.students.map(aluno => {
+            const isPago = sheetDataCache.finance.some(f => f.alunoId == aluno.id && f.mesRef === currentMonth);
+            return `
+                <div class="student-item ${isPago ? 'paid' : 'unpaid'}" style="margin: 5px 0;">
+                    <div style="flex:1;">
+                        <strong>${escapeHtml(aluno.nome)}</strong><br>
+                        <small>${isPago ? '✅ Pago este mês' : '❌ Pendente'}</small>
+                    </div>
+                    ${!isPago ? `<button onclick="registrarPagamento('${aluno.id}')" style="padding:5px 10px; font-size:0.7rem;">💰 Pagar</button>` : ''}
+                </div>
+            `;
+        }).join('');
+        openModal('modalFinance');
+    }
+
+    async function registrarPagamento(alunoId) {
+        const today = new Date().toISOString().slice(0,10);
+        const currentMonth = today.slice(0, 7);
+        const newId = `f_${Date.now()}`;
+        if (!confirm("Confirmar recebimento de mensalidade?")) return;
+        await appendRow(SHEET_NAMES.FINANCE, [newId, alunoId, today, "R$ 0,00", currentMonth]);
+        await loadAllDataFromSheet();
+        openFinanceModal(); // Atualiza lista
+    }
+
+    async function saveEvaluation() {
+        const alunoId = document.getElementById('studentSelectEval').value;
+        if (!alunoId) return alert("Selecione um aluno.");
+        const peso = document.getElementById('evalPeso').value;
+        const altura = document.getElementById('evalAltura').value;
+        const imc = (peso / ((altura/100) * (altura/100))).toFixed(1);
+        const row = [
+            `ev_${Date.now()}`, alunoId, new Date().toISOString().slice(0,10),
+            peso, altura, imc,
+            document.getElementById('evalCintura').value,
+            document.getElementById('evalQuadril').value,
+            document.getElementById('evalBraco').value,
+            document.getElementById('evalCoxa').value,
+            document.getElementById('evalNotas').value
+        ];
+        await appendRow(SHEET_NAMES.EVALUATIONS, row);
+        alert("Avaliação física salva com sucesso!");
+        closeModal('modalEvaluation');
+        await loadAllDataFromSheet();
     }
     
     function showObservationsPreview(alunoId) {
@@ -785,29 +1088,66 @@
     }
     
     async function generateReport() {
-        const alunoId = studentSelectReport.value;
+        const alunoId = document.getElementById('studentSelectReportPDF').value;
         if (!alunoId) return alert("Selecione um aluno para gerar relatório.");
         const aluno = sheetDataCache.students.find(a => a.id == alunoId);
-        if (!aluno) return;
-        const presencasAluno = sheetDataCache.attendances.filter(a => a.alunoId == alunoId);
-        const obsAluno = sheetDataCache.observations.filter(o => o.alunoId == alunoId);
+        const presencas = sheetDataCache.attendances.filter(a => a.alunoId == alunoId).sort((a,b) => new Date(b.data) - new Date(a.data));
+        const evals = sheetDataCache.evaluations.filter(e => e.alunoId == alunoId).sort((a,b) => new Date(b.data) - new Date(a.data));
+        
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.setFontSize(18);
-        doc.text(`Relatório - ${aluno.nome}`, 20, 20);
-        doc.setFontSize(12);
-        doc.text(`Telefone: ${aluno.telefone || 'Não informado'}`, 20, 35);
-        doc.text(`Objetivo: ${aluno.objetivo || 'Não definido'}`, 20, 45);
-        doc.text(`Presenças totais: ${presencasAluno.length}`, 20, 60);
-        doc.text(`Últimas observações:`, 20, 75);
-        let y = 85;
-        obsAluno.slice(-5).forEach(obs => {
+        doc.setFontSize(20); doc.setTextColor(0, 100, 0);
+        doc.text("PHYSIQUE - RELATÓRIO INDIVIDUAL", 20, 20);
+        
+        doc.setFontSize(12); doc.setTextColor(0, 0, 0);
+        doc.text(`Aluno: ${aluno.nome}`, 20, 35);
+        doc.text(`Objetivo: ${aluno.objetivo || 'Não definido'}`, 20, 42);
+        
+        // Histórico de Avaliações
+        doc.setFontSize(14); doc.text("Evolução Física Recente:", 20, 55);
+        let y = 65;
+        evals.slice(0, 5).forEach(e => {
             doc.setFontSize(10);
-            doc.text(`- ${new Date(obs.dataHora).toLocaleDateString()}: ${obs.observacao.substring(0,70)}`, 20, y);
-            y += 8;
+            doc.text(`${e.data}: Peso ${e.peso}kg | IMC ${e.imc} | Notas: ${e.notas || '-'}`, 25, y);
+            y += 7;
+        });
+
+        // Histórico de Presenças
+        y += 10;
+        doc.setFontSize(14); doc.text("Histórico de Presenças (Últimas 20):", 20, y);
+        y += 10;
+        presencas.slice(0, 20).forEach((p, idx) => {
+            doc.setFontSize(10);
+            doc.text(`${p.data} - ${p.horario}`, 25, y);
+            y += 6;
             if (y > 270) { doc.addPage(); y = 20; }
         });
-        doc.save(`relatorio_${aluno.nome}.pdf`);
+        
+        doc.save(`relatorio_${aluno.nome.replace(/\s/g, '_')}.pdf`);
+    }
+
+    async function generateGeneralReport() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+        
+        const presencasMes = sheetDataCache.attendances.filter(p => p.data >= startOfMonth);
+        const stats = { '17h': 0, '19h': 0, 'Extra': 0 };
+        presencasMes.forEach(p => { if(stats[p.horario] !== undefined) stats[p.horario]++; });
+
+        doc.setFontSize(20); doc.text("RELATÓRIO GERAL DE FLUXO", 20, 20);
+        doc.setFontSize(14); doc.text(`Mês Referência: ${now.toLocaleString('pt-BR', { month: 'long' })}`, 20, 35);
+        
+        doc.text("Ocupação por Horário:", 20, 50);
+        doc.text(`- 17h: ${stats['17h']} presenças`, 25, 60);
+        doc.text(`- 19h: ${stats['19h']} presenças`, 25, 70);
+        doc.text(`- Extra: ${stats['Extra']} presenças`, 25, 80);
+        
+        const total = stats['17h'] + stats['19h'] + stats['Extra'];
+        doc.text(`Total do Mês: ${total} atendimentos`, 20, 100);
+        
+        doc.save(`relatorio_geral_${now.getMonth()+1}.pdf`);
     }
     
     function showAuthenticatedUI() {
@@ -837,17 +1177,13 @@
         document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
         document.getElementById('addStudentBtn')?.addEventListener('click', addStudent);
         document.getElementById('addObservationBtn')?.addEventListener('click', addObservation);
+        document.getElementById('saveEvalBtn')?.addEventListener('click', saveEvaluation);
         document.getElementById('generateReportBtn')?.addEventListener('click', generateReport);
+        document.getElementById('generateGeneralReportBtn')?.addEventListener('click', generateGeneralReport);
         document.getElementById('syncSheetBtn')?.addEventListener('click', loadAllDataFromSheet);
         document.getElementById('logoutBtn')?.addEventListener('click', logout);
-        studentSelectReport?.addEventListener('change', (e) => showObservationsPreview(e.target.value));
-
-        // Captura global de erros para ajudar no debug do 404
-        window.addEventListener('error', function(e) {
-            if (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK') {
-                console.error("Falha ao carregar recurso (404 provável):", e.target.src || e.target.href);
-            }
-        }, true);
+        
+        document.getElementById('studentSelectReport')?.addEventListener('change', (e) => showObservationsPreview(e.target.value));
     };
 </script>
 </body>
