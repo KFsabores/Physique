@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0,1" />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.23/dist/jspdf.plugin.autotable.min.js"></script>
     
     <style>
         :root {
@@ -21,7 +22,7 @@
             --neon-glow: 0 0 15px rgba(254, 235, 26, 0.5);
             --border-color: rgba(254, 235, 26, 0.2);
             --glass-border: rgba(255, 255, 255, 0.05);
-            --transition: all 0.3s ease;
+            --transition: all 0.2s ease;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -47,30 +48,62 @@
             box-shadow: 0 25px 50px rgba(0,0,0,0.5);
         }
 
-        header { text-align: center; margin-bottom: 2.5rem; position: relative; }
-        .logo-img { width: 100px; filter: drop-shadow(var(--neon-glow)); margin-bottom: 10px; }
+        header { text-align: center; margin-bottom: 2rem; }
+        .logo-img { width: 90px; filter: drop-shadow(var(--neon-glow)); margin-bottom: 10px; }
         h1 { color: var(--accent-color); text-transform: uppercase; letter-spacing: 2px; font-size: 2.2rem; font-weight: 800; text-shadow: var(--neon-glow); }
+
+        .user-info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            padding: 12px 25px;
+            border-radius: 60px;
+            margin-bottom: 2rem;
+            border: 1px solid var(--glass-border);
+        }
 
         .quick-actions {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
         }
         .btn-action {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: #fff;
-            padding: 25px 15px;
-            border-radius: 2rem;
+            padding: 22px 10px;
+            border-radius: 1.8rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             cursor: pointer;
             transition: var(--transition);
         }
-        .btn-action:hover { border-color: var(--accent-color); box-shadow: var(--neon-glow); transform: translateY(-3px); }
-        .btn-action span { font-size: 2.2rem; color: var(--accent-color); }
+        .btn-action:hover { border-color: var(--accent-color); box-shadow: var(--neon-glow); transform: scale(1.03); }
+        .btn-action span { font-size: 2rem; color: var(--accent-color); }
+
+        .btn-inactive-alert {
+            grid-column: 1 / -1;
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid #ff4757;
+            color: #ff4757;
+            padding: 16px;
+            border-radius: 1.5rem;
+            margin-bottom: 15px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            animation: pulse 2s infinite;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); } }
 
         .modal {
             display: none;
@@ -99,7 +132,7 @@
             background: rgba(255,255,255,0.04);
             padding: 18px;
             border-radius: 18px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -117,45 +150,33 @@
             border: none;
         }
 
-        .report-preview {
+        input, select, textarea {
+            width: 100%;
+            background: #111;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            font-size: 1rem;
+            outline: none;
+        }
+        input:focus { border-color: var(--accent-color); }
+
+        button.primary { width: 100%; background: var(--accent-color); color: #000; border: none; padding: 18px; border-radius: 15px; font-weight: 800; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
+
+        .report-preview-box {
             background: rgba(0,0,0,0.3);
             border: 1px solid var(--border-color);
             border-radius: 20px;
             padding: 20px;
-            margin-top: 20px;
-            font-size: 0.9rem;
-            line-height: 1.6;
-        }
-
-        .report-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
             margin-top: 15px;
         }
-
-        .report-section {
-            background: rgba(255,255,255,0.03);
-            padding: 12px;
-            border-radius: 12px;
-        }
-
-        input[type="date"] {
-            background: #111;
-            color: var(--accent-color);
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            width: auto;
-        }
-
-        button.primary { width: 100%; background: var(--accent-color); color: #000; border: none; padding: 18px; border-radius: 15px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
 
         @media (max-width: 600px) {
             .app-container { padding: 1.5rem; }
             .quick-actions { grid-template-columns: 1fr 1fr; }
-            .report-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 1.8rem; }
         }
     </style>
 </head>
@@ -165,22 +186,28 @@
     <header>
         <img src="logo.png" class="logo-img" onerror="this.src='https://lh3.googleusercontent.com/d/14YQ4fB_3oU9u7yP5mX_yQyvD5_D6zX-7'">
         <h1>Physique</h1>
-        <p style="opacity:0.7; font-size:0.9rem; margin-top:5px;">Centro de Treinamento e Evolução</p>
     </header>
 
     <div id="unauthenticatedView">
         <div style="text-align:center; padding: 3rem 1rem;">
+            <p style="margin-bottom:2rem; opacity:0.8;">Acesse com sua conta Google para gerenciar a academia.</p>
             <div id="googleLoginBtnWrapper" style="display:flex; justify-content:center;"></div>
+            <p style="margin-top:3rem; font-size:0.7rem; opacity:0.4; letter-spacing:1px;">Aplicativo: KF Fit-Sync v2.5.0</p>
         </div>
     </div>
 
     <div id="authenticatedView" style="display:none;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2.5rem; background:rgba(255,255,255,0.05); padding:10px 25px; border-radius:60px; border: 1px solid var(--glass-border);">
+        <div class="user-info-bar">
             <div style="display:flex; align-items:center; gap:12px;">
-                <img id="userAvatar" src="" style="width:35px; height:35px; border-radius:50%;">
-                <span id="userEmailSpan" style="font-size:0.85rem;"></span>
+                <img id="userAvatar" src="" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--accent-color);">
+                <span id="userEmailSpan" style="font-size:0.85rem; font-weight:600;"></span>
             </div>
-            <button onclick="location.reload()" style="background:#ff4757; border:none; color:#fff; padding:6px 15px; border-radius:20px; cursor:pointer; font-size:0.75rem;">SAIR</button>
+            <button onclick="location.reload()" style="background:#ff4757; color:#fff; border:none; padding:7px 18px; border-radius:30px; font-size:0.75rem; font-weight:bold; cursor:pointer;">SAIR</button>
+        </div>
+
+        <div id="btnInactives" class="btn-inactive-alert" onclick="openModal('modalInactives')">
+            <span class="material-symbols-outlined">person_off</span>
+            <span id="inactiveCountText">0 ALUNOS AUSENTES (+4 DIAS)</span>
         </div>
 
         <div class="quick-actions">
@@ -203,21 +230,29 @@
                 <span class="material-symbols-outlined">monitoring</span>Relatórios
             </button>
         </div>
-        <div id="sheetStatus" style="margin-top:20px; text-align:center; opacity:0.6; font-size:0.8rem;">🔄 Sincronizando...</div>
+        <div id="sheetStatus" style="margin-top:20px; text-align:center; opacity:0.5; font-size:0.8rem;">🔄 Sincronizando...</div>
+        <p style="margin-top:3rem; text-align:center; font-size:0.7rem; opacity:0.4; letter-spacing:1px;">Aplicativo: KF Fit-Sync v2.5.0</p>
     </div>
 </div>
 
-<!-- MODAIS -->
-<div id="modalAttendance" class="modal">
+<!-- MODAIS RESTRUTURADOS COM TUDO -->
+<div id="modalInactives" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <h3 style="color:#ff4757;">Alunos Ausentes (+4 dias)</h3>
+            <span class="material-symbols-outlined" onclick="closeModal('modalInactives')" style="cursor:pointer; color:#ff4757;">close</span>
+        </div>
+        <div id="inactiveListContainer"></div>
+    </div>
+</div>
+
+<div id="modalAttendance" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
             <h3 style="color:var(--accent-color);">Chamada Diária</h3>
             <span class="material-symbols-outlined" onclick="closeModal('modalAttendance')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
-        <div style="margin-bottom:15px; display:flex; align-items:center; gap:10px;">
-            <label style="font-size:0.8rem; opacity:0.8;">Data:</label>
-            <input type="date" id="attendanceDate" onchange="renderAttendanceList()">
-        </div>
+        <input type="date" id="attendanceDate" onchange="renderAttendanceList()">
         <div id="studentsListContainer"></div>
     </div>
 </div>
@@ -225,7 +260,7 @@
 <div id="modalFinance" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <h3 style="color:var(--accent-color);">Financeiro</h3>
+            <h3 style="color:var(--accent-color);">Financeiro Mensal</h3>
             <span class="material-symbols-outlined" onclick="closeModal('modalFinance')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
         <div id="financeListContainer"></div>
@@ -235,33 +270,33 @@
 <div id="modalNewStudent" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <h3 style="color:var(--accent-color);">Novo Aluno</h3>
+            <h3 style="color:var(--accent-color);">Novo Cadastro</h3>
             <span class="material-symbols-outlined" onclick="closeModal('modalNewStudent')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
         <input type="text" id="studentName" placeholder="Nome Completo">
         <input type="text" id="studentPhone" placeholder="WhatsApp">
         <input type="text" id="studentGoal" placeholder="Objetivo">
-        <button class="primary" onclick="addStudent()">CADASTRAR</button>
+        <button class="primary" onclick="addStudent()">CADASTRAR ALUNO</button>
     </div>
 </div>
 
 <div id="modalObservation" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <h3 style="color:var(--accent-color);">Notas de Treino</h3>
+            <h3 style="color:var(--accent-color);">Evolução e Notas</h3>
             <span class="material-symbols-outlined" onclick="closeModal('modalObservation')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
         <select id="studentSelectObs" onchange="showObsPreview(this.value)"></select>
-        <div id="obsPreview" style="background:rgba(0,0,0,0.2); padding:12px; border-radius:12px; margin-bottom:12px; font-size:0.8rem; color:var(--text-secondary);">Selecione um aluno.</div>
-        <textarea id="observationText" rows="3" placeholder="Nota de hoje..."></textarea>
-        <button class="primary" onclick="addObservation()">SALVAR</button>
+        <div id="obsPreview" style="background:rgba(0,0,0,0.2); padding:15px; border-radius:15px; margin-bottom:15px; font-size:0.85rem; color:var(--text-secondary);">Selecione um aluno para ver histórico.</div>
+        <textarea id="observationText" rows="4" placeholder="O que aconteceu no treino de hoje?"></textarea>
+        <button class="primary" onclick="addObservation()">SALVAR NOTA</button>
     </div>
 </div>
 
 <div id="modalEvaluation" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <h3 style="color:var(--accent-color);">Avaliação</h3>
+            <h3 style="color:var(--accent-color);">Avaliação Antropométrica</h3>
             <span class="material-symbols-outlined" onclick="closeModal('modalEvaluation')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
         <select id="studentSelectEval"></select>
@@ -270,23 +305,25 @@
             <input type="number" id="evalAltura" placeholder="Altura (cm)">
             <input type="number" id="evalCintura" placeholder="Cintura (cm)">
             <input type="number" id="evalQuadril" placeholder="Quadril (cm)">
+            <input type="number" id="evalBraco" placeholder="Braço (cm)">
+            <input type="number" id="evalCoxa" placeholder="Coxa (cm)">
         </div>
-        <button class="primary" onclick="saveEvaluation()">SALVAR</button>
+        <textarea id="evalNotas" placeholder="Notas da avaliação..."></textarea>
+        <button class="primary" onclick="saveEvaluation()">SALVAR AVALIAÇÃO</button>
     </div>
 </div>
 
 <div id="modalReports" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <h3 style="color:var(--accent-color);">Relatórios</h3>
+            <h3 style="color:var(--accent-color);">Relatórios de Gestão</h3>
             <span class="material-symbols-outlined" onclick="closeModal('modalReports')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
         <div style="display:flex; gap:10px; margin-bottom:15px;">
             <select id="studentSelectReportPDF" style="margin-bottom:0;"></select>
-            <button onclick="generatePreview()" style="background:var(--accent-color); color:#000; border:none; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer;">VISUALIZAR</button>
+            <button onclick="generatePreview()" style="background:var(--accent-color); color:#000; border:none; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer;">VER</button>
         </div>
-        <button onclick="generateGeneralPreview()" style="background:#333; color:#fff; border:none; padding:10px; border-radius:10px; width:100%; margin-bottom:20px; cursor:pointer;">RELATÓRIO GERAL ACADEMIA</button>
-        
+        <button onclick="generateGeneralPreview()" style="background:#333; color:#fff; border:none; padding:12px; border-radius:10px; width:100%; cursor:pointer; font-weight:bold;">RELATÓRIO GERAL DA ACADEMIA</button>
         <div id="reportPreviewContainer"></div>
     </div>
 </div>
@@ -297,19 +334,12 @@
     let sheetDataCache = { students: [], attendances: [], observations: [], evaluations: [], finance: [] };
 
     function initializeGoogleLogin() {
-        google.accounts.id.initialize({
-            client_id: '115138407454-st6indfe1snrq3106nquqqmujv17js2t.apps.googleusercontent.com',
-            callback: (res) => { initTokenClient(); }
-        });
+        google.accounts.id.initialize({ client_id: '115138407454-st6indfe1snrq3106nquqqmujv17js2t.apps.googleusercontent.com', callback: (res) => { initTokenClient(); } });
         google.accounts.id.renderButton(document.getElementById("googleLoginBtnWrapper"), { theme: "filled_black", size: "large", shape: "pill" });
     }
 
     function initTokenClient() {
-        window.tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: '115138407454-st6indfe1snrq3106nquqqmujv17js2t.apps.googleusercontent.com',
-            scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
-            callback: (res) => { accessToken = res.access_token; fetchUserInfo(); }
-        });
+        window.tokenClient = google.accounts.oauth2.initTokenClient({ client_id: '115138407454-st6indfe1snrq3106nquqqmujv17js2t.apps.googleusercontent.com', scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file', callback: (res) => { accessToken = res.access_token; fetchUserInfo(); } });
         window.tokenClient.requestAccessToken();
     }
 
@@ -331,13 +361,13 @@
             if (data.files && data.files.length > 0) {
                 spreadsheetId = data.files[0].id;
                 await loadData();
-            } else { alert("Crie a planilha ou verifique o login."); }
+            }
         } catch (e) { console.error(e); }
     }
 
     async function loadData() {
         const status = document.getElementById('sheetStatus');
-        status.innerText = "📥 Sincronizando...";
+        status.innerText = "📥 Sincronizando dados...";
         try {
             const read = async (n) => {
                 const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${n}!A1:Z`, { headers: { Authorization: `Bearer ${accessToken}` } });
@@ -345,14 +375,15 @@
             };
             const [s, a, o, e, f] = await Promise.all([read(SHEET_NAMES.STUDENTS), read(SHEET_NAMES.ATTENDANCE), read(SHEET_NAMES.OBSERVATIONS), read(SHEET_NAMES.EVALUATIONS), read(SHEET_NAMES.FINANCE)]);
             
-            sheetDataCache.students = s.filter(r => r[0] && String(r[0]).startsWith('s_')).map((r, i) => ({ id: r[0], nome: r[1], whats: r[2], obj: r[3], row: i+1 }));
-            sheetDataCache.attendances = a.filter(r => r[0] && String(r[0]).startsWith('p_')).map((r, i) => ({ id: r[0], aid: r[1], data: r[2], hora: r[3], row: i+2 }));
-            sheetDataCache.observations = o.filter(r => r[0] && String(r[0]).startsWith('o_')).map(r => ({ aid: r[1], data: r[2], texto: r[3] }));
-            sheetDataCache.evaluations = e.filter(r => r[0] && String(r[0]).startsWith('ev_')).map(r => ({ aid: r[1], data: r[2], peso: r[3], imc: r[5], cintura: r[6], quadril: r[7] }));
-            sheetDataCache.finance = f.filter(r => r[0] && String(r[0]).startsWith('f_')).map(r => ({ aid: r[1], data: r[2], mes: r[4] }));
+            sheetDataCache.students = s.slice(1).filter(r => r[0]).map((r, i) => ({ id: r[0], nome: r[1], whats: r[2], obj: r[3], row: i+2 }));
+            sheetDataCache.attendances = a.slice(1).filter(r => r[0]).map((r, i) => ({ id: r[0], aid: r[1], data: r[2], hora: r[3], row: i+2 }));
+            sheetDataCache.observations = o.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], texto: r[3] }));
+            sheetDataCache.evaluations = e.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], peso: r[3], imc: r[5], cintura: r[6], quadril: r[7], braco: r[8], coxa: r[9], notas: r[10] }));
+            sheetDataCache.finance = f.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], mes: r[4] }));
 
             renderAttendanceList();
             renderFinanceList();
+            calculateInactives();
             updateSelects();
             status.innerText = `📊 Online (${sheetDataCache.students.length} alunos)`;
         } catch (e) { status.innerText = "❌ Erro ao ler dados."; }
@@ -364,11 +395,11 @@
         cont.innerHTML = sheetDataCache.students.map(s => {
             const pres = sheetDataCache.attendances.filter(p => p.aid == s.id && p.data == selDate);
             return `<div class="student-item">
-                <strong>${escapeHtml(s.nome)}</strong>
+                <strong style="font-size:1rem;">${escapeHtml(s.nome)}</strong>
                 <div style="display:flex; gap:8px;">
                     ${['17h','19h','Extra'].map(h => {
                         const rec = pres.find(p => p.hora == h);
-                        return rec ? `<button class="presence-badge" onclick="togglePres('${rec.id}')">✅ ${h}</button>` : `<button onclick="markPres('${s.id}','${h}')" style="background:#333; color:#fff; border:none; padding:8px 12px; border-radius:10px; cursor:pointer;">${h}</button>`;
+                        return rec ? `<button class="presence-badge" onclick="togglePres('${rec.id}')">✅ ${h}</button>` : `<button onclick="markPres('${s.id}','${h}')" style="background:#222; color:#777; border:1px solid #333; padding:8px 12px; border-radius:10px; cursor:pointer; font-size:0.75rem;">${h}</button>`;
                     }).join('')}
                 </div>
             </div>`;
@@ -376,7 +407,6 @@
     }
 
     async function togglePres(id) {
-        if (!confirm("Deseja desmarcar esta presença?")) return;
         const rec = sheetDataCache.attendances.find(a => a.id == id);
         await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.ATTENDANCE}!A${rec.row}:Z${rec.row}:clear`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } });
         await loadData();
@@ -388,14 +418,32 @@
         await loadData();
     }
 
+    function calculateInactives() {
+        const today = new Date();
+        const limitDate = new Date(); limitDate.setDate(today.getDate() - 4);
+        const inactives = sheetDataCache.students.filter(s => {
+            const studentPres = sheetDataCache.attendances.filter(a => a.aid == s.id);
+            if (studentPres.length === 0) return true;
+            const lastDate = new Date(Math.max(...studentPres.map(a => new Date(a.data))));
+            return lastDate < limitDate;
+        });
+        const btn = document.getElementById('btnInactives');
+        if (inactives.length > 0) {
+            btn.style.display = 'flex';
+            document.getElementById('inactiveCountText').innerText = `${inactives.length} ALUNOS AUSENTES (+4 DIAS)`;
+            document.getElementById('inactiveListContainer').innerHTML = inactives.map(s => `<div class="student-item"><span>${s.nome}</span><a href="https://wa.me/${s.whats.replace(/\D/g,'')}" target="_blank" style="background:#2ed573; color:#000; padding:5px 12px; border-radius:30px; font-size:0.7rem; font-weight:bold; text-decoration:none;">WHATSAPP</a></div>`).join('');
+        } else { btn.style.display = 'none'; }
+        return inactives;
+    }
+
     function renderFinanceList() {
         const cont = document.getElementById('financeListContainer');
         const month = new Date().toISOString().slice(0, 7);
         cont.innerHTML = sheetDataCache.students.map(s => {
             const ok = sheetDataCache.finance.some(f => f.aid == s.id && f.mes == month);
             return `<div class="student-item ${ok?'paid':'unpaid'}">
-                <div><strong>${escapeHtml(s.nome)}</strong><br><small>${ok?'PAGO':'PENDENTE'}</small></div>
-                ${!ok?`<button onclick="pay('${s.id}')" style="background:var(--accent-color); color:#000; border:none; padding:8px 12px; border-radius:10px; font-weight:bold; cursor:pointer;">PAGAR</button>`:''}
+                <div><strong>${escapeHtml(s.nome)}</strong><br><small>${ok?'✅ PAGO':'🔴 PENDENTE'}</small></div>
+                ${!ok?`<button onclick="pay('${s.id}')" style="background:var(--accent-color); color:#000; border:none; padding:10px 18px; border-radius:12px; font-weight:bold; cursor:pointer;">💰 PAGAR</button>`:''}
             </div>`;
         }).join('');
     }
@@ -405,83 +453,87 @@
         await loadData();
     }
 
-    // RELATÓRIOS
     function generatePreview() {
         const id = document.getElementById('studentSelectReportPDF').value;
         if(!id) return alert("Selecione um aluno!");
         const aluno = sheetDataCache.students.find(s => s.id == id);
         const pres = sheetDataCache.attendances.filter(a => a.aid == id);
-        const obs = sheetDataCache.observations.filter(o => o.aid == id).slice(-3);
+        const counts = { '17h': pres.filter(p=>p.hora=='17h').length, '19h': pres.filter(p=>p.hora=='19h').length, 'Extra': pres.filter(p=>p.hora=='Extra').length };
         const evals = sheetDataCache.evaluations.filter(e => e.aid == id).slice(-1)[0];
-        const month = new Date().toISOString().slice(0, 7);
-        const pago = sheetDataCache.finance.some(f => f.aid == id && f.mes == month);
-
-        const html = `
-            <div class="report-preview">
+        
+        document.getElementById('reportPreviewContainer').innerHTML = `
+            <div class="report-preview-box">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h2 style="color:var(--accent-color);">${aluno.nome}</h2>
-                    <button onclick="downloadPDF('${id}')" style="background:transparent; color:#ff4757; border:1px solid #ff4757; border-radius:50%; width:40px; height:40px; cursor:pointer;" title="Baixar PDF">PDF</button>
+                    <h3 style="color:var(--accent-color);">${aluno.nome}</h3>
+                    <button onclick="downloadPDF('${id}')" style="background:#ff4757; color:#fff; border:none; padding:8px 15px; border-radius:50px; font-size:0.7rem; font-weight:bold; cursor:pointer;">PDF</button>
                 </div>
-                <p><strong>WhatsApp:</strong> ${aluno.whats || '-'}</p>
-                <p><strong>Objetivo:</strong> ${aluno.obj || '-'}</p>
-                <div class="report-grid">
-                    <div class="report-section"><strong>Frequência:</strong><br>${pres.length} aulas registradas</div>
-                    <div class="report-section"><strong>Financeiro:</strong><br>${pago ? '✅ Pago este mês' : '🔴 Pendente'}</div>
-                </div>
-                <div style="margin-top:15px;"><strong>Últimas Notas:</strong><br>${obs.map(o => `• ${o.texto}`).join('<br>') || 'Sem notas.'}</div>
-                ${evals ? `<div style="margin-top:15px;"><strong>Últimas Medidas:</strong><br>Peso: ${evals.peso}kg | IMC: ${evals.imc}<br>Cintura: ${evals.cintura}cm | Quadril: ${evals.quadril}cm</div>` : ''}
-            </div>`;
-        document.getElementById('reportPreviewContainer').innerHTML = html;
-    }
-
-    function generateGeneralPreview() {
-        const month = new Date().toISOString().slice(0, 7);
-        const pagosCount = sheetDataCache.finance.filter(f => f.mes == month).length;
-        const presCount = sheetDataCache.attendances.length;
-
-        const html = `
-            <div class="report-preview">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h2 style="color:var(--accent-color);">Relatório Geral Academia</h2>
-                    <button onclick="downloadGeneralPDF()" style="background:transparent; color:#ff4757; border:1px solid #ff4757; border-radius:50%; width:40px; height:40px; cursor:pointer;">PDF</button>
-                </div>
-                <div class="report-grid">
-                    <div class="report-section"><strong>Alunos Ativos:</strong><br>${sheetDataCache.students.length} matriculados</div>
-                    <div class="report-section"><strong>Financeiro (${month}):</strong><br>${pagosCount} pagamentos feitos</div>
-                    <div class="report-section"><strong>Total Presenças:</strong><br>${presCount} registros totais</div>
+                <div style="margin-top:15px; font-size:0.9rem; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
+                    <strong>Frequência por Horário:</strong><br>
+                    17h: ${counts['17h']} | 19h: ${counts['19h']} | Extra: ${counts['Extra']}
+                    ${evals ? `<br><br><strong>Última Avaliação:</strong><br>Peso: ${evals.peso}kg | IMC: ${evals.imc}<br>Cintura: ${evals.cintura}cm | Braço: ${evals.braco}cm` : ''}
                 </div>
             </div>`;
-        document.getElementById('reportPreviewContainer').innerHTML = html;
     }
 
     async function downloadPDF(id) {
         const aluno = sheetDataCache.students.find(s => s.id == id);
+        const pres = sheetDataCache.attendances.filter(a => a.aid == id);
+        const counts = { '17h': pres.filter(p=>p.hora=='17h').length, '19h': pres.filter(p=>p.hora=='19h').length, 'Extra': pres.filter(p=>p.hora=='Extra').length };
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.setFontSize(22); doc.text(`Physique - Relatório Individual`, 20, 20);
-        doc.setFontSize(14); doc.text(`Aluno: ${aluno.nome}`, 20, 40);
-        doc.text(`Status Financeiro: Mensalidade Ok`, 20, 50);
-        doc.text(`Presenças Totais: ${sheetDataCache.attendances.filter(a => a.aid == id).length}`, 20, 60);
+        doc.setFontSize(22); doc.text(`Relatório Individual: ${aluno.nome}`, 20, 20);
+        doc.autoTable({ head: [['Horário', 'Total de Aulas']], body: [['17h', counts['17h']], ['19h', counts['19h']], ['Extra', counts['Extra']]], startY: 30 });
         doc.save(`Relatorio_${aluno.nome}.pdf`);
+    }
+
+    async function generateGeneralPreview() {
+        const month = new Date().toISOString().slice(0, 7);
+        const pagos = sheetDataCache.finance.filter(f => f.mes == month).length;
+        const inactives = calculateInactives();
+        document.getElementById('reportPreviewContainer').innerHTML = `
+            <div class="report-preview-box">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="color:var(--accent-color);">Geral Academia</h3>
+                    <button onclick="downloadGeneralPDF()" style="background:#ff4757; color:#fff; border:none; padding:8px 15px; border-radius:50px; font-size:0.7rem; font-weight:bold; cursor:pointer;">BAIXAR PDF</button>
+                </div>
+                <div style="margin-top:15px; font-size:0.9rem;">
+                    Alunos Ativos: ${sheetDataCache.students.length}<br>
+                    Pagos este mês: ${pagos}<br>
+                    Alunos Ausentes (+4 dias): ${inactives.length}
+                </div>
+            </div>`;
     }
 
     async function downloadGeneralPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.setFontSize(22); doc.text(`Physique - Relatório Geral`, 20, 20);
-        doc.setFontSize(14); doc.text(`Total Alunos: ${sheetDataCache.students.length}`, 20, 40);
-        doc.save(`Relatorio_Geral_Academia.pdf`);
+        const month = new Date().toISOString().slice(0, 7);
+        const inactives = calculateInactives();
+        const stats = sheetDataCache.students.map(s => {
+            const pago = sheetDataCache.finance.some(f => f.aid == s.id && f.mes == month);
+            return [s.nome, pago ? 'PAGO' : 'PENDENTE'];
+        });
+        doc.text("Relatório Geral Physique", 20, 15);
+        doc.autoTable({ head: [['Aluno', 'Financeiro']], body: stats, startY: 25 });
+        doc.addPage();
+        doc.text("Alunos Inativos (+4 dias)", 20, 15);
+        doc.autoTable({ head: [['Nome']], body: inactives.map(s => [s.nome]), startY: 25 });
+        doc.save("Relatorio_Geral_Physique.pdf");
     }
 
-    // UTILITÁRIOS
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function escapeHtml(s) { return s ? s.replace(/[&<>]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[t] || t)) : ''; }
-    function updateSelects() { ['studentSelectObs', 'studentSelectEval', 'studentSelectReportPDF'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<option value="">-- Aluno --</option>' + sheetDataCache.students.map(s => `<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join(''); }); }
+    function updateSelects() { ['studentSelectObs', 'studentSelectEval', 'studentSelectReportPDF'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<option value="">-- Escolha o Aluno --</option>' + sheetDataCache.students.map(s => `<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join(''); }); }
     async function addStudent() { const n = document.getElementById('studentName').value; if(!n) return; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.STUDENTS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`s_${Date.now()}`, n, document.getElementById('studentPhone').value, document.getElementById('studentGoal').value, new Date().toISOString()]] }) }); closeModal('modalNewStudent'); await loadData(); }
     async function addObservation() { const id = document.getElementById('studentSelectObs').value; const txt = document.getElementById('observationText').value; if(!id || !txt) return; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.OBSERVATIONS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`o_${Date.now()}`, id, new Date().toISOString(), txt]] }) }); closeModal('modalObservation'); await loadData(); }
-    function showObsPreview(id) { const obs = sheetDataCache.observations.filter(o => o.aid == id).slice(-2); const cont = document.getElementById('obsPreview'); if(obs.length === 0) cont.innerText = "Nenhuma nota."; else cont.innerHTML = obs.map(o => `📌 ${o.texto}`).join('<br>'); }
-    async function saveEvaluation() { const id = document.getElementById('studentSelectEval').value; const p = document.getElementById('evalPeso').value; const a = document.getElementById('evalAltura').value; if(!id || !p || !a) return; const imc = (p / ((a/100)*(a/100))).toFixed(1); await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.EVALUATIONS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`ev_${Date.now()}`, id, new Date().toISOString().slice(0,10), p, a, imc, document.getElementById('evalCintura').value, document.getElementById('evalQuadril').value]] }) }); closeModal('modalEvaluation'); await loadData(); }
+    function showObsPreview(id) { const obs = sheetDataCache.observations.filter(o => o.aid == id).slice(-2); const cont = document.getElementById('obsPreview'); if(obs.length === 0) cont.innerText = "Nenhuma nota anterior."; else cont.innerHTML = obs.map(o => `📌 ${o.texto}`).join('<br>'); }
+    async function saveEvaluation() { 
+        const id = document.getElementById('studentSelectEval').value;
+        const row = [`ev_${Date.now()}`, id, new Date().toISOString().slice(0,10), document.getElementById('evalPeso').value, document.getElementById('evalAltura').value, (document.getElementById('evalPeso').value / ((document.getElementById('evalAltura').value/100)**2)).toFixed(1), document.getElementById('evalCintura').value, document.getElementById('evalQuadril').value, document.getElementById('evalBraco').value, document.getElementById('evalCoxa').value, document.getElementById('evalNotas').value];
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.EVALUATIONS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [row] }) });
+        closeModal('modalEvaluation'); await loadData(); 
+    }
     window.onload = initializeGoogleLogin;
 </script>
 </body>
