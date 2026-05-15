@@ -906,19 +906,39 @@
         sheetStatusSpan.innerText = "📥 Carregando dados...";
         try {
             const alunosRows = await readSheet(SHEET_NAMES.STUDENTS);
-            sheetDataCache.students = alunosRows.map((row, idx) => ({ id: row[0] || Date.now()+idx, nome: row[1]||'', telefone: row[2]||'', objetivo: row[3]||'', dataCad: row[4]||'' }));
+            // Pula a primeira linha (cabeçalho) se houver dados
+            const alunosData = alunosRows.length > 1 ? alunosRows.slice(1) : [];
+            sheetDataCache.students = alunosData.map((row, idx) => ({ 
+                id: String(row[0]), 
+                nome: row[1]||'', 
+                telefone: row[2]||'', 
+                objetivo: row[3]||'', 
+                dataCad: row[4]||'' 
+            }));
             
             const presencasRows = await readSheet(SHEET_NAMES.ATTENDANCE);
-            sheetDataCache.attendances = presencasRows.map(r => ({ id: r[0], alunoId: r[1], data: r[2], horario: r[3], status: r[4] }));
+            const presencasData = presencasRows.length > 1 ? presencasRows.slice(1) : [];
+            sheetDataCache.attendances = presencasData.map(r => ({ 
+                id: r[0], alunoId: String(r[1]), data: r[2], horario: r[3], status: r[4] 
+            }));
             
             const obsRows = await readSheet(SHEET_NAMES.OBSERVATIONS);
-            sheetDataCache.observations = obsRows.map(r => ({ id: r[0], alunoId: r[1], dataHora: r[2], observacao: r[3] }));
+            const obsData = obsRows.length > 1 ? obsRows.slice(1) : [];
+            sheetDataCache.observations = obsData.map(r => ({ 
+                id: r[0], alunoId: String(r[1]), dataHora: r[2], observacao: r[3] 
+            }));
             
             const evalRows = await readSheet(SHEET_NAMES.EVALUATIONS);
-            sheetDataCache.evaluations = evalRows.map(r => ({ id: r[0], alunoId: r[1], data: r[2], peso: r[3], altura: r[4], imc: r[5], notas: r[10] }));
+            const evalData = evalRows.length > 1 ? evalRows.slice(1) : [];
+            sheetDataCache.evaluations = evalData.map(r => ({ 
+                id: r[0], alunoId: String(r[1]), data: r[2], peso: r[3], altura: r[4], imc: r[5], notas: r[10] 
+            }));
             
             const financeRows = await readSheet(SHEET_NAMES.FINANCE);
-            sheetDataCache.finance = financeRows.map(r => ({ id: r[0], alunoId: r[1], data: r[2], valor: r[3], mesRef: r[4] }));
+            const financeData = financeRows.length > 1 ? financeRows.slice(1) : [];
+            sheetDataCache.finance = financeData.map(r => ({ 
+                id: r[0], alunoId: String(r[1]), data: r[2], valor: r[3], mesRef: r[4] 
+            }));
 
             renderStudentsList();
             updateStudentSelects();
@@ -1133,10 +1153,12 @@
     async function generateReport() {
         const alunoId = document.getElementById('studentSelectReportPDF').value;
         if (!alunoId) return alert("Selecione um aluno para gerar relatório.");
-        const aluno = sheetDataCache.students.find(a => a.id == alunoId);
-        const presencas = sheetDataCache.attendances.filter(a => a.alunoId == alunoId).sort((a,b) => new Date(b.data) - new Date(a.data));
-        const evals = sheetDataCache.evaluations.filter(e => e.alunoId == alunoId).sort((a,b) => new Date(b.data) - new Date(a.data));
-        const finance = sheetDataCache.finance.filter(f => f.alunoId == alunoId).sort((a,b) => new Date(b.data) - new Date(a.data));
+        const aluno = sheetDataCache.students.find(a => String(a.id) === String(alunoId));
+        if (!aluno) return alert("Aluno não encontrado no banco de dados.");
+
+        const presencas = sheetDataCache.attendances.filter(a => String(a.alunoId) === String(alunoId)).sort((a,b) => new Date(b.data) - new Date(a.data));
+        const evals = sheetDataCache.evaluations.filter(e => String(e.alunoId) === String(alunoId)).sort((a,b) => new Date(b.data) - new Date(a.data));
+        const finance = sheetDataCache.finance.filter(f => String(f.alunoId) === String(alunoId)).sort((a,b) => new Date(b.data) - new Date(a.data));
         
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
