@@ -86,54 +86,25 @@
         }
         .modal-content {
             background: var(--card-bg);
-            padding: 2.5rem;
+            padding: 2rem;
             border-radius: 2.5rem;
             width: 100%;
-            max-width: 680px;
+            max-width: 700px;
             max-height: 92vh;
             overflow-y: auto;
             border: 1px solid var(--border-color);
             position: relative;
         }
 
-        /* Layout Alinhado Horizontalmente */
         .student-item {
             background: rgba(255,255,255,0.04);
             padding: 15px 20px;
             border-radius: 18px;
             margin-bottom: 10px;
             display: flex;
-            justify-content: space-between; /* Nome na esquerda, botões na direita */
+            justify-content: space-between;
             align-items: center;
             border: 1px solid rgba(255,255,255,0.05);
-            gap: 15px;
-        }
-
-        .item-actions {
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-
-        .presence-badge {
-            background: #2ed573;
-            color: #000;
-            padding: 8px 12px;
-            border-radius: 10px;
-            font-size: 0.75rem;
-            font-weight: 800;
-            cursor: pointer;
-            border: none;
-        }
-
-        .btn-mini {
-            background: #222;
-            color: #777;
-            border: 1px solid #333;
-            padding: 8px 12px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 0.75rem;
         }
 
         input, select, textarea {
@@ -145,7 +116,9 @@
             border-radius: 12px;
             margin-bottom: 12px;
             font-size: 1rem;
+            outline: none;
         }
+        input:focus { border-color: var(--accent-color); }
 
         button.primary { width: 100%; background: var(--accent-color); color: #000; border: none; padding: 18px; border-radius: 15px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
 
@@ -155,15 +128,12 @@
             border-radius: 20px;
             padding: 20px;
             margin-top: 15px;
-            font-size: 0.9rem;
         }
 
-        .diff-pos { color: #2ed573; font-weight: bold; }
-        .diff-neg { color: #ff4757; font-weight: bold; }
-
         @media (max-width: 600px) {
+            .app-container { padding: 1.5rem; }
+            .quick-actions { grid-template-columns: 1fr 1fr; }
             .student-item { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .item-actions { width: 100%; justify-content: space-between; }
         }
     </style>
 </head>
@@ -179,7 +149,7 @@
         <div style="text-align:center; padding: 2rem;">
             <p style="margin-bottom:2rem; opacity:0.8;">Gerencie seu Centro de Treinamento de forma inteligente.</p>
             <div id="googleLoginBtnWrapper" style="display:flex; justify-content:center;"></div>
-            <p style="margin-top:3rem; font-size:0.7rem; opacity:0.3; letter-spacing:1px;">Aplicativo: KF Fit-Sync v2.6.0</p>
+            <p style="margin-top:3rem; font-size:0.7rem; opacity:0.3; letter-spacing:1px;">Aplicativo: KF Fit-Sync v2.7.0</p>
         </div>
     </div>
 
@@ -200,6 +170,9 @@
             <button class="btn-action" onclick="openModal('modalAttendance')">
                 <span class="material-symbols-outlined">calendar_today</span>Presença
             </button>
+            <button class="btn-action" onclick="openModal('modalActivities')">
+                <span class="material-symbols-outlined">fitness_center</span>Atividades
+            </button>
             <button class="btn-action" onclick="openModal('modalFinance')">
                 <span class="material-symbols-outlined">payments</span>Financeiro
             </button>
@@ -217,57 +190,54 @@
             </button>
         </div>
         <div id="sheetStatus" style="margin-top:20px; text-align:center; opacity:0.5; font-size:0.8rem;">🔄 Sincronizando...</div>
-        <p style="text-align:center; font-size:0.7rem; opacity:0.3; margin-top:2rem;">Aplicativo: KF Fit-Sync v2.6.0</p>
+        <p style="text-align:center; font-size:0.7rem; opacity:0.3; margin-top:2rem;">Aplicativo: KF Fit-Sync v2.7.0</p>
     </div>
 </div>
 
-<!-- MODAIS -->
-<div id="modalAttendance" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;"><h3 style="color:var(--accent-color);">Presença</h3><span class="material-symbols-outlined" onclick="closeModal('modalAttendance')" style="cursor:pointer; color:#ff4757;">close</span></div><input type="date" id="attendanceDate" onchange="renderAttendanceList()"><div id="studentsListContainer"></div></div></div>
-<div id="modalFinance" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;"><h3 style="color:var(--accent-color);">Financeiro</h3><span class="material-symbols-outlined" onclick="closeModal('modalFinance')" style="cursor:pointer; color:#ff4757;">close</span></div><div id="financeListContainer"></div></div></div>
-<div id="modalNewStudent" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;"><h3 style="color:var(--accent-color);">Novo Cadastro</h3><span class="material-symbols-outlined" onclick="closeModal('modalNewStudent')" style="cursor:pointer; color:#ff4757;">close</span></div><input type="text" id="studentName" placeholder="Nome Completo"><input type="text" id="studentPhone" placeholder="WhatsApp"><input type="text" id="studentGoal" placeholder="Objetivo"><button class="primary" onclick="addStudent()">CADASTRAR</button></div></div>
-<div id="modalObservation" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;"><h3 style="color:var(--accent-color);">Notas</h3><span class="material-symbols-outlined" onclick="closeModal('modalObservation')" style="cursor:pointer; color:#ff4757;">close</span></div><select id="studentSelectObs" onchange="showObsPreview(this.value)"></select><div id="obsPreview" style="background:rgba(0,0,0,0.2); padding:10px; border-radius:10px; margin-bottom:15px; font-size:0.8rem;"></div><textarea id="observationText" rows="3"></textarea><button class="primary" onclick="addObservation()">SALVAR NOTA</button></div></div>
-
-<div id="modalEvaluation" class="modal">
+<!-- MODAL ATIVIDADES DO DIA -->
+<div id="modalActivities" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <h3 style="color:var(--accent-color);">Avaliação Física</h3>
-            <span class="material-symbols-outlined" onclick="closeModal('modalEvaluation')" style="cursor:pointer; color:#ff4757;">close</span>
+            <h3 style="color:var(--accent-color);">Atividades do Dia</h3>
+            <span class="material-symbols-outlined" onclick="closeModal('modalActivities')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
-        <select id="studentSelectEval" onchange="loadStudentLastEval(this.value)"></select>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <input type="number" id="evalPeso" placeholder="Peso (kg)">
-            <input type="number" id="evalAltura" placeholder="Altura (cm)">
-            <input type="number" id="evalCintura" placeholder="Cintura (cm)">
-            <input type="number" id="evalQuadril" placeholder="Quadril (cm)">
-            <input type="number" id="evalBraco" placeholder="Braço (cm)">
-            <input type="number" id="evalCoxa" placeholder="Coxa (cm)">
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <input type="date" id="activityDate" style="margin-bottom:0;" onchange="loadDayActivity(this.value)">
+            <button onclick="copyLastActivity()" style="background:#333; color:var(--accent-color); border:none; padding:10px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:0.75rem;">REPETIR TREINO</button>
         </div>
-        <textarea id="evalNotas" placeholder="Observações..."></textarea>
-        <button class="primary" onclick="saveEvaluation()">ATUALIZAR MEDIDAS</button>
+        <textarea id="activityText" rows="10" placeholder="Digite a lista de exercícios para hoje..."></textarea>
+        <button class="primary" onclick="saveActivity()">SALVAR ATIVIDADE</button>
     </div>
 </div>
 
+<!-- MODAL RELATÓRIOS (CORRIGIDO) -->
 <div id="modalReports" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <h3 style="color:var(--accent-color);">Relatórios</h3>
+            <h3 style="color:var(--accent-color);">Relatórios de Gestão</h3>
             <span class="material-symbols-outlined" onclick="closeModal('modalReports')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
         <div style="display:flex; gap:10px; margin-bottom:15px;">
             <select id="studentSelectReportPDF" style="margin-bottom:0;"></select>
             <button onclick="generatePreview()" style="background:var(--accent-color); color:#000; border:none; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer;">VISUALIZAR</button>
         </div>
-        <button onclick="generateGeneralPreview()" style="background:#333; color:#fff; border:none; padding:12px; border-radius:10px; width:100%; cursor:pointer;">GERAL DA ACADEMIA</button>
+        <button onclick="generateGeneralPreview()" style="background:#333; color:#fff; border:none; padding:12px; border-radius:10px; width:100%; cursor:pointer; font-weight:bold;">RELATÓRIO GERAL DA ACADEMIA</button>
         <div id="reportPreviewContainer"></div>
     </div>
 </div>
 
+<!-- Outros modais ocultos para brevidade (já implementados anteriormente) -->
+<div id="modalAttendance" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;"><h3 style="color:var(--accent-color);">Presença</h3><span class="material-symbols-outlined" onclick="closeModal('modalAttendance')" style="cursor:pointer; color:#ff4757;">close</span></div><input type="date" id="attendanceDate" onchange="renderAttendanceList()"><div id="studentsListContainer"></div></div></div>
+<div id="modalFinance" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;"><h3 style="color:var(--accent-color);">Financeiro</h3><span class="material-symbols-outlined" onclick="closeModal('modalFinance')" style="cursor:pointer; color:#ff4757;">close</span></div><div id="financeListContainer"></div></div></div>
+<div id="modalNewStudent" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;"><h3 style="color:var(--accent-color);">Novo Aluno</h3><span class="material-symbols-outlined" onclick="closeModal('modalNewStudent')" style="cursor:pointer; color:#ff4757;">close</span></div><input type="text" id="studentName" placeholder="Nome Completo"><input type="text" id="studentPhone" placeholder="WhatsApp"><input type="text" id="studentGoal" placeholder="Objetivo"><button class="primary" onclick="addStudent()">CADASTRAR</button></div></div>
+<div id="modalObservation" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;"><h3 style="color:var(--accent-color);">Notas</h3><span class="material-symbols-outlined" onclick="closeModal('modalObservation')" style="cursor:pointer; color:#ff4757;">close</span></div><select id="studentSelectObs" onchange="showObsPreview(this.value)"></select><div id="obsPreview" style="background:rgba(0,0,0,0.2); padding:10px; border-radius:10px; margin-bottom:10px; font-size:0.8rem;"></div><textarea id="observationText" rows="3"></textarea><button class="primary" onclick="addObservation()">SALVAR NOTA</button></div></div>
+<div id="modalEvaluation" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;"><h3 style="color:var(--accent-color);">Avaliação</h3><span class="material-symbols-outlined" onclick="closeModal('modalEvaluation')" style="cursor:pointer; color:#ff4757;">close</span></div><select id="studentSelectEval" onchange="loadStudentLastEval(this.value)"></select><div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"><input type="number" id="evalPeso" placeholder="Peso"><input type="number" id="evalAltura" placeholder="Altura"><input type="number" id="evalCintura" placeholder="Cintura"><input type="number" id="evalQuadril" placeholder="Quadril"><input type="number" id="evalBraco" placeholder="Braço"><input type="number" id="evalCoxa" placeholder="Coxa"></div><textarea id="evalNotas" placeholder="Notas..."></textarea><button class="primary" onclick="saveEvaluation()">ATUALIZAR</button></div></div>
 <div id="modalInactives" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;"><h3 style="color:#ff4757;">Inativos</h3><span class="material-symbols-outlined" onclick="closeModal('modalInactives')" style="cursor:pointer; color:#ff4757;">close</span></div><div id="inactiveListContainer"></div></div></div>
 
 <script>
-    const SHEET_NAMES = { STUDENTS: 'Alunos', ATTENDANCE: 'Presencas', OBSERVATIONS: 'Observacoes', EVALUATIONS: 'Avaliacoes', FINANCE: 'Financeiro' };
+    const SHEET_NAMES = { STUDENTS: 'Alunos', ATTENDANCE: 'Presencas', OBSERVATIONS: 'Observacoes', EVALUATIONS: 'Avaliacoes', FINANCE: 'Financeiro', ACTIVITIES: 'Atividades' };
     let accessToken = null, spreadsheetId = null;
-    let sheetDataCache = { students: [], attendances: [], observations: [], evaluations: [], finance: [] };
+    let sheetDataCache = { students: [], attendances: [], observations: [], evaluations: [], finance: [], activities: [] };
 
     function initializeGoogleLogin() {
         google.accounts.id.initialize({ client_id: '115138407454-st6indfe1snrq3106nquqqmujv17js2t.apps.googleusercontent.com', callback: (res) => { initTokenClient(); } });
@@ -287,6 +257,7 @@
         document.getElementById('unauthenticatedView').style.display = 'none';
         document.getElementById('authenticatedView').style.display = 'block';
         document.getElementById('attendanceDate').value = new Date().toISOString().slice(0,10);
+        document.getElementById('activityDate').value = new Date().toISOString().slice(0,10);
         await initSpreadsheet();
     }
 
@@ -297,179 +268,141 @@
     }
 
     async function loadData() {
+        const status = document.getElementById('sheetStatus');
+        status.innerText = "📥 Sincronizando...";
         try {
             const read = async (n) => {
                 const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${n}!A1:Z`, { headers: { Authorization: `Bearer ${accessToken}` } });
                 const d = await r.json(); return d.values || [];
             };
-            const [s, a, o, e, f] = await Promise.all([read(SHEET_NAMES.STUDENTS), read(SHEET_NAMES.ATTENDANCE), read(SHEET_NAMES.OBSERVATIONS), read(SHEET_NAMES.EVALUATIONS), read(SHEET_NAMES.FINANCE)]);
+            const [s, a, o, e, f, act] = await Promise.all([read(SHEET_NAMES.STUDENTS), read(SHEET_NAMES.ATTENDANCE), read(SHEET_NAMES.OBSERVATIONS), read(SHEET_NAMES.EVALUATIONS), read(SHEET_NAMES.FINANCE), read(SHEET_NAMES.ACTIVITIES)]);
             
             sheetDataCache.students = s.slice(1).filter(r => r[0]).map((r, i) => ({ id: r[0], nome: r[1], whats: r[2], obj: r[3], row: i+2 }));
             sheetDataCache.attendances = a.map((r,i)=>({vals:r,row:i+1})).slice(1).filter(x=>x.vals[0]).map(x=>({id:x.vals[0],aid:x.vals[1],data:x.vals[2],hora:x.vals[3],row:x.row}));
             sheetDataCache.observations = o.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], texto: r[3] }));
             sheetDataCache.evaluations = e.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], peso: parseFloat(r[3]), altura: r[4], imc: r[5], cintura: parseFloat(r[6]), quadril: parseFloat(r[7]), braco: parseFloat(r[8]), coxa: parseFloat(r[9]), notas: r[10] }));
             sheetDataCache.finance = f.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], mes: r[4] }));
+            sheetDataCache.activities = act.slice(1).filter(r => r[0]).map(r => ({ data: r[1], texto: r[2] }));
 
-            renderAttendanceList(); renderFinanceList(); calculateInactives(); updateSelects();
-        } catch (err) { console.error(err); }
+            renderAttendanceList(); renderFinanceList(); calculateInactives(); updateSelects(); loadDayActivity(document.getElementById('activityDate').value);
+            status.innerText = `📊 Online (${sheetDataCache.students.length} alunos)`;
+        } catch (err) { status.innerText = "❌ Erro ao ler dados."; }
     }
 
-    function renderAttendanceList() {
-        const cont = document.getElementById('studentsListContainer');
-        const selDate = document.getElementById('attendanceDate').value;
-        cont.innerHTML = sheetDataCache.students.map(s => {
-            const pres = sheetDataCache.attendances.filter(p => p.aid == s.id && p.data == selDate);
-            return `<div class="student-item">
-                <strong style="font-size:0.95rem;">${escapeHtml(s.nome)}</strong>
-                <div class="item-actions">
-                    ${['17h','19h','Extra'].map(h => {
-                        const rec = pres.find(p => p.hora == h);
-                        return rec ? `<button class="presence-badge" onclick="togglePres('${rec.id}')">✅ ${h}</button>` : `<button class="btn-mini" onclick="markPres('${s.id}','${h}')">${h}</button>`;
-                    }).join('')}
-                </div>
-            </div>`;
-        }).join('');
+    // ATIVIDADES DO DIA
+    function loadDayActivity(date) {
+        const act = sheetDataCache.activities.find(a => a.data == date);
+        document.getElementById('activityText').value = act ? act.texto : '';
     }
 
-    async function togglePres(id) {
-        const rec = sheetDataCache.attendances.find(a => a.id == id);
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.ATTENDANCE}!A${rec.row}:Z${rec.row}:clear`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } });
+    async function saveActivity() {
+        const date = document.getElementById('activityDate').value;
+        const text = document.getElementById('activityText').value;
+        const row = [`act_${Date.now()}`, date, text];
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.ACTIVITIES}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [row] }) });
         await loadData();
+        alert("Atividade salva com sucesso!");
     }
 
-    async function markPres(aid, h) {
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.ATTENDANCE}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`p_${Date.now()}`, aid, document.getElementById('attendanceDate').value, h, 'Presente']] }) });
-        await loadData();
+    function copyLastActivity() {
+        if (sheetDataCache.activities.length > 0) {
+            const last = sheetDataCache.activities[sheetDataCache.activities.length - 1];
+            document.getElementById('activityText').value = last.texto;
+        } else { alert("Nenhuma atividade anterior para copiar."); }
     }
 
-    function renderFinanceList() {
-        const cont = document.getElementById('financeListContainer');
+    // RELATÓRIO GERAL (CORRIGIDO)
+    function generateGeneralPreview() {
         const month = new Date().toISOString().slice(0, 7);
-        cont.innerHTML = sheetDataCache.students.map(s => {
-            const ok = sheetDataCache.finance.some(f => f.aid == s.id && f.mes == month);
-            return `<div class="student-item">
-                <div><strong>${escapeHtml(s.nome)}</strong><br><small style="color:${ok?'#2ed573':'#ff4757'}">${ok?'PAGO':'PENDENTE'}</small></div>
-                <div class="item-actions">
-                    ${!ok?`<button onclick="pay('${s.id}')" style="background:var(--accent-color); color:#000; border:none; padding:8px 15px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:0.75rem;">PAGAR</button>`:'<span style="color:#2ed573; font-weight:bold;">✅</span>'}
+        const pagos = sheetDataCache.finance.filter(f => f.mes == month).length;
+        const total = sheetDataCache.students.length;
+        const pendentes = total - pagos;
+        const h17 = sheetDataCache.attendances.filter(a => a.hora == '17h').length;
+        const h19 = sheetDataCache.attendances.filter(a => a.hora == '19h').length;
+
+        document.getElementById('reportPreviewContainer').innerHTML = `
+            <div class="report-preview-box">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="color:var(--accent-color);">Resumo da Academia</h3>
+                    <button onclick="downloadGeneralPDF()" style="background:#ff4757; color:#fff; border:none; padding:8px 15px; border-radius:50px; font-size:0.7rem; font-weight:bold; cursor:pointer;">PDF COMPLETO</button>
+                </div>
+                <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                    <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:15px;">
+                        <strong>Financeiro:</strong><br>
+                        Pagos: ${pagos}<br>Pendentes: ${pendentes}
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:15px;">
+                        <strong>Horários + Cheios:</strong><br>
+                        17h: ${h17} aulas<br>19h: ${h19} aulas
+                    </div>
                 </div>
             </div>`;
-        }).join('');
     }
 
-    async function pay(id) {
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.FINANCE}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`f_${Date.now()}`, id, new Date().toISOString().slice(0,10), '0', new Date().toISOString().slice(0,7)]] }) });
-        await loadData();
+    async function downloadGeneralPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const month = new Date().toISOString().slice(0, 7);
+        const data = sheetDataCache.students.map(s => {
+            const pago = sheetDataCache.finance.some(f => f.aid == s.id && f.mes == month);
+            const aTotal = sheetDataCache.attendances.filter(a => a.aid == s.id).length;
+            return [s.nome, pago ? 'PAGO' : 'PENDENTE', aTotal];
+        });
+        doc.text("Relatório Geral de Gestão - Physique", 20, 15);
+        doc.autoTable({ head: [['Aluno', 'Financeiro', 'Total de Aulas']], body: data, startY: 25 });
+        doc.save("Relatorio_Geral_Physique.pdf");
     }
 
-    // RELATÓRIO TURBO
+    // RELATÓRIO INDIVIDUAL
     function generatePreview() {
         const id = document.getElementById('studentSelectReportPDF').value;
         if(!id) return alert("Selecione um aluno!");
-        const aluno = sheetDataCache.students.find(s => s.id == id);
-        const evals = sheetDataCache.evaluations.filter(e => e.aid == id);
+        const al = sheetDataCache.students.find(s => s.id == id);
+        const ev = sheetDataCache.evaluations.filter(e => e.aid == id);
         const pres = sheetDataCache.attendances.filter(a => a.aid == id);
-        const counts = { '17h': pres.filter(p=>p.hora=='17h').length, '19h': pres.filter(p=>p.hora=='19h').length, 'Extra': pres.filter(p=>p.hora=='Extra').length };
         const month = new Date().toISOString().slice(0, 7);
         const pago = sheetDataCache.finance.some(f => f.aid == id && f.mes == month);
-
-        let evalHTML = "<p style='opacity:0.6;'>Sem avaliações.</p>";
-        if (evals.length > 0) {
-            const first = evals[0], last = evals[evals.length - 1];
-            const diff = (v1, v2, type='down') => {
-                const d = (v2 - v1).toFixed(1);
-                const isGood = type === 'down' ? d <= 0 : d >= 0;
-                return `<span class="${isGood ? 'diff-pos' : 'diff-neg'}">(${d > 0 ? '+' : ''}${d})</span>`;
-            };
-            evalHTML = `
-                <table style="width:100%; font-size:0.8rem; margin-top:10px; border-collapse:collapse;">
-                    <tr style="opacity:0.6;"><td>Medida</td><td>Início</td><td>Hoje</td><td>Evol.</td></tr>
-                    <tr><td>Peso</td><td>${first.peso}kg</td><td>${last.peso}kg</td><td>${diff(first.peso, last.peso)}</td></tr>
-                    <tr><td>Cintura</td><td>${first.cintura}cm</td><td>${last.cintura}cm</td><td>${diff(first.cintura, last.cintura)}</td></tr>
-                    <tr><td>Braço</td><td>${first.braco}cm</td><td>${last.braco}cm</td><td>${diff(first.braco, last.braco, 'up')}</td></tr>
-                </table>`;
+        
+        let evHTML = "<p>Sem avaliações.</p>";
+        if(ev.length > 0) {
+            const f = ev[0], l = ev[ev.length-1];
+            evHTML = `<table style="width:100%; font-size:0.8rem; border-collapse:collapse;">
+                <tr style="opacity:0.6;"><td>Medida</td><td>Início</td><td>Hoje</td><td>Evol.</td></tr>
+                <tr><td>Peso</td><td>${f.peso}kg</td><td>${l.peso}kg</td><td>${(l.peso-f.peso).toFixed(1)}</td></tr>
+            </table>`;
         }
 
         document.getElementById('reportPreviewContainer').innerHTML = `
             <div class="report-preview-box">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 style="color:var(--accent-color);">${aluno.nome}</h3>
-                    <div style="text-align:right;"><small>${pago ? '✅ PAGO' : '🔴 PENDENTE'}</small></div>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-                    <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:10px;">
-                        <strong>Frequência:</strong><br>
-                        17h: ${counts['17h']} | 19h: ${counts['19h']}<br>Extra: ${counts['Extra']}
-                    </div>
-                    <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:10px;">
-                        <strong>Status:</strong><br>
-                        ${pago ? 'Mensalidade em dia' : 'Débito pendente'}
-                    </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="color:var(--accent-color);">${al.nome}</h3>
+                    <span style="color:${pago?'#2ed573':'#ff4757'}; font-weight:bold; font-size:0.75rem;">${pago?'PAGO':'PENDENTE'}</span>
                 </div>
                 <div style="margin-top:15px; border-top:1px solid #333; padding-top:10px;">
-                    <strong>Comparativo de Medidas:</strong>
-                    ${evalHTML}
+                    <strong>Aulas Totais:</strong> ${pres.length}<br><br>
+                    <strong>Evolução:</strong>
+                    ${evHTML}
                 </div>
             </div>`;
     }
 
-    function calculateInactives() {
-        const limit = new Date(); limit.setDate(limit.getDate() - 4);
-        const inactives = sheetDataCache.students.filter(s => {
-            const p = sheetDataCache.attendances.filter(a => a.aid == s.id);
-            if (p.length === 0) return true;
-            return new Date(Math.max(...p.map(x => new Date(x.data)))) < limit;
-        });
-        const btn = document.getElementById('btnInactives');
-        if (inactives.length > 0) {
-            btn.style.display = 'block';
-            document.getElementById('inactiveCountText').innerText = `${inactives.length} ALUNOS AUSENTES (+4 DIAS)`;
-            document.getElementById('inactiveListContainer').innerHTML = inactives.map(s => `<div class="student-item"><span>${s.nome}</span><a href="https://wa.me/${s.whats.replace(/\D/g,'')}" target="_blank" style="background:#2ed573; color:#000; padding:5px 12px; border-radius:30px; font-size:0.7rem; font-weight:bold; text-decoration:none;">WHATSAPP</a></div>`).join('');
-        } else { btn.style.display = 'none'; }
-    }
-
-    async function addStudent() {
-        const n = document.getElementById('studentName').value;
-        if (!n) return alert("Preencha o nome!");
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.STUDENTS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`s_${Date.now()}`, n, document.getElementById('studentPhone').value, document.getElementById('studentGoal').value, new Date().toISOString()]] }) });
-        closeModal('modalNewStudent'); await loadData();
-    }
-
-    async function saveEvaluation() {
-        const id = document.getElementById('studentSelectEval').value;
-        const p = parseFloat(document.getElementById('evalPeso').value);
-        const a = parseFloat(document.getElementById('evalAltura').value);
-        const imc = (p / ((a/100)**2)).toFixed(1);
-        const row = [`ev_${Date.now()}`, id, new Date().toISOString().slice(0,10), p, a, imc, document.getElementById('evalCintura').value, document.getElementById('evalQuadril').value, document.getElementById('evalBraco').value, document.getElementById('evalCoxa').value, document.getElementById('evalNotas').value];
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.EVALUATIONS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [row] }) });
-        closeModal('modalEvaluation'); await loadData();
-    }
-
-    function loadStudentLastEval(aid) {
-        const ev = sheetDataCache.evaluations.filter(e => e.aid == aid).slice(-1)[0];
-        if (ev) {
-            ['evalPeso','evalAltura','evalCintura','evalQuadril','evalBraco','evalCoxa'].forEach(id => {
-                const key = id.replace('eval','').toLowerCase();
-                document.getElementById(id).value = ev[key] || ev[id.replace('eval','').charAt(0).toLowerCase() + id.slice(5)]; 
-            });
-            document.getElementById('evalPeso').value = ev.peso;
-            document.getElementById('evalAltura').value = ev.altura;
-            document.getElementById('evalCintura').value = ev.cintura;
-            document.getElementById('evalQuadril').value = ev.quadril;
-            document.getElementById('evalBraco').value = ev.braco;
-            document.getElementById('evalCoxa').value = ev.coxa;
-        }
-    }
-
+    // Funções de apoio
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function escapeHtml(s) { return s ? s.replace(/[&<>]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[t] || t)) : ''; }
     function updateSelects() { ['studentSelectObs', 'studentSelectEval', 'studentSelectReportPDF'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<option value="">-- Aluno --</option>' + sheetDataCache.students.map(s => `<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join(''); }); }
-    window.onload = initializeGoogleLogin;
-
-    async function addObservation() { const id = document.getElementById('studentSelectObs').value; const txt = document.getElementById('observationText').value; if(!id || !txt) return; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.OBSERVATIONS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`o_${Date.now()}`, id, new Date().toISOString(), txt]] }) }); closeModal('modalObservation'); await loadData(); }
+    async function addStudent() { const n = document.getElementById('studentName').value; if(!n) return; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.STUDENTS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`s_${Date.now()}`, n, document.getElementById('studentPhone').value, document.getElementById('studentGoal').value, new Date().toISOString()]] }) }); closeModal('modalNewStudent'); await loadData(); }
+    async function saveEvaluation() { const id = document.getElementById('studentSelectEval').value; const p = parseFloat(document.getElementById('evalPeso').value); const a = parseFloat(document.getElementById('evalAltura').value); const row = [`ev_${Date.now()}`, id, new Date().toISOString().slice(0,10), p, a, (p/((a/100)**2)).toFixed(1), document.getElementById('evalCintura').value, document.getElementById('evalQuadril').value, document.getElementById('evalBraco').value, document.getElementById('evalCoxa').value, document.getElementById('evalNotas').value]; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.EVALUATIONS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [row] }) }); closeModal('modalEvaluation'); await loadData(); }
+    function loadStudentLastEval(aid) { const ev = sheetDataCache.evaluations.filter(e => e.aid == aid).slice(-1)[0]; if(ev) { document.getElementById('evalPeso').value = ev.peso; document.getElementById('evalAltura').value = ev.altura; document.getElementById('evalCintura').value = ev.cintura; document.getElementById('evalQuadril').value = ev.quadril; document.getElementById('evalBraco').value = ev.braco; document.getElementById('evalCoxa').value = ev.coxa; } }
+    function renderAttendanceList() { const cont = document.getElementById('studentsListContainer'); const selDate = document.getElementById('attendanceDate').value; cont.innerHTML = sheetDataCache.students.map(s => { const pres = sheetDataCache.attendances.filter(p => p.aid == s.id && p.data == selDate); return `<div class="student-item"><strong>${escapeHtml(s.nome)}</strong><div style="display:flex; gap:8px;">${['17h','19h','Extra'].map(h => { const rec = pres.find(p => p.hora == h); return rec ? `<button class="presence-badge" onclick="togglePres('${rec.id}')">✅ ${h}</button>` : `<button onclick="markPres('${s.id}','${h}')" style="background:#222; color:#777; border:1px solid #333; padding:8px 12px; border-radius:10px; cursor:pointer; font-size:0.75rem;">${h}</button>`; }).join('')}</div></div>`; }).join(''); }
+    async function togglePres(id) { const rec = sheetDataCache.attendances.find(a => a.id == id); await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.ATTENDANCE}!A${rec.row}:Z${rec.row}:clear`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } }); await loadData(); }
+    async function markPres(aid, h) { await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.ATTENDANCE}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`p_${Date.now()}`, aid, document.getElementById('attendanceDate').value, h, 'Presente']] }) }); await loadData(); }
+    function renderFinanceList() { const cont = document.getElementById('financeListContainer'); const month = new Date().toISOString().slice(0, 7); cont.innerHTML = sheetDataCache.students.map(s => { const ok = sheetDataCache.finance.some(f => f.aid == s.id && f.mes == month); return `<div class="student-item"><div><strong>${escapeHtml(s.nome)}</strong><br><small style="color:${ok?'#2ed573':'#ff4757'}">${ok?'PAGO':'PENDENTE'}</small></div>${!ok?`<button onclick="pay('${s.id}')" style="background:var(--accent-color); color:#000; border:none; padding:8px 15px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:0.75rem;">PAGAR</button>`:''}</div>`; }).join(''); }
+    async function pay(id) { await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.FINANCE}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`f_${Date.now()}`, id, new Date().toISOString().slice(0,10), '0', new Date().toISOString().slice(0,7)]] }) }); await loadData(); }
+    function calculateInactives() { const limit = new Date(); limit.setDate(limit.getDate() - 4); const inactives = sheetDataCache.students.filter(s => { const p = sheetDataCache.attendances.filter(a => a.aid == s.id); if (p.length === 0) return true; return new Date(Math.max(...p.map(x => new Date(x.data)))) < limit; }); const btn = document.getElementById('btnInactives'); if (inactives.length > 0) { btn.style.display = 'block'; document.getElementById('inactiveListContainer').innerHTML = inactives.map(s => `<div class="student-item"><span>${s.nome}</span><a href="https://wa.me/${s.whats}" target="_blank" style="background:#2ed573; color:#000; padding:5px 12px; border-radius:30px; font-size:0.7rem; font-weight:bold; text-decoration:none;">WHATSAPP</a></div>`).join(''); } else { btn.style.display = 'none'; } }
     function showObsPreview(id) { const obs = sheetDataCache.observations.filter(o => o.aid == id).slice(-2); const cont = document.getElementById('obsPreview'); if(obs.length === 0) cont.innerText = "Nenhuma nota."; else cont.innerHTML = obs.map(o => `📌 ${o.texto}`).join('<br>'); }
-    async function downloadPDF(id) { alert("Gerando PDF..."); }
-    async function generateGeneralPreview() { alert("Gerando relatório geral..."); }
+    async function addObservation() { const id = document.getElementById('studentSelectObs').value; const txt = document.getElementById('observationText').value; if(!id || !txt) return; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.OBSERVATIONS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`o_${Date.now()}`, id, new Date().toISOString(), txt]] }) }); closeModal('modalObservation'); await loadData(); }
+    window.onload = initializeGoogleLogin;
 </script>
 </body>
 </html>
