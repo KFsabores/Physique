@@ -186,7 +186,7 @@
                 <span class="material-symbols-outlined">person_add</span>Novo Aluno
             </button>
             <button class="btn-action" onclick="openModal('modalObservation')">
-                <span class="material-symbols-outlined">edit_note</span>Notas
+                <span class="material-symbols-outlined">edit_note</span>Observações
             </button>
             <button class="btn-action" onclick="openModal('modalEvaluation')">
                 <span class="material-symbols-outlined">vital_signs</span>Avaliação
@@ -243,7 +243,7 @@
 
 <div id="modalNewStudent" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;"><h3 style="color:var(--accent-color);">Novo Cadastro</h3><span class="material-symbols-outlined" onclick="closeModal('modalNewStudent')" style="cursor:pointer; color:#ff4757;">close</span></div><input type="text" id="studentName" placeholder="Nome Completo"><input type="text" id="studentPhone" placeholder="WhatsApp"><input type="text" id="studentGoal" placeholder="Objetivo"><button class="primary" onclick="addStudent()">CADASTRAR</button></div></div>
 
-<div id="modalObservation" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;"><h3 style="color:var(--accent-color);">Notas Rápidas</h3><span class="material-symbols-outlined" onclick="closeModal('modalObservation')" style="cursor:pointer; color:#ff4757;">close</span></div><select id="studentSelectObs" onchange="showObsPreview(this.value)"></select><div id="obsPreview" style="background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; margin-bottom:10px; font-size:0.85rem;"></div><textarea id="observationText" rows="3" placeholder="Escreva uma observação..."></textarea><button class="primary" onclick="addObservation()">SALVAR NOTA</button></div></div>
+<div id="modalObservation" class="modal"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;"><h3 style="color:var(--accent-color);">Observações</h3><span class="material-symbols-outlined" onclick="closeModal('modalObservation')" style="cursor:pointer; color:#ff4757;">close</span></div><select id="studentSelectObs" onchange="showObsPreview(this.value)"></select><div id="obsPreview" style="background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; margin-bottom:10px; font-size:0.85rem;"></div><textarea id="observationText" rows="3" placeholder="Escreva uma observação..."></textarea><button class="primary" onclick="addObservation()">SALVAR OBSERVAÇÃO</button></div></div>
 
 <div id="modalEvaluation" class="modal">
     <div class="modal-content">
@@ -344,7 +344,7 @@
             sheetDataCache.activities = act.slice(1).filter(r => r[0]).map(r => ({ data: r[1], texto: r[2] }));
 
             renderAttendanceList(); renderFinanceList(); updateSelects(); calculateRadar(); loadDayActivity(document.getElementById('activityDate').value);
-            status.innerText = `📊 Online (${sheetDataCache.students.filter(s=>s.status=='Ativo').length} ativos)`;
+            status.innerText = `📊 Alunos: ${sheetDataCache.students.filter(s=>s.status=='Ativo').length}`;
         } catch (err) { status.innerText = "❌ Erro de conexão."; }
     }
 
@@ -437,6 +437,7 @@
         const pagos = sheetDataCache.finance.filter(f => f.mes == month).length;
         const h17 = sheetDataCache.attendances.filter(a => a.hora == '17h').length;
         const h19 = sheetDataCache.attendances.filter(a => a.hora == '19h').length;
+        const extra = sheetDataCache.attendances.filter(a => a.hora == 'Extra').length;
 
         document.getElementById('reportPreviewContainer').innerHTML = `
             <div class="report-preview-box">
@@ -446,7 +447,7 @@
                         <strong>Financeiro:</strong><br>Pagos: ${pagos}<br>Pendentes: ${total-pagos}
                     </div>
                     <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:15px;">
-                        <strong>Frequência:</strong><br>17h: ${h17}<br>19h: ${h19}
+                        <strong>Frequência:</strong><br>17h: ${h17}<br>19h: ${h19}<br>Extra: ${extra}
                     </div>
                 </div>
                 <button class="primary" style="padding:12px; font-size:0.8rem; margin-top:20px;" onclick="downloadGeneralPDF()">GERAR PDF COMPLETO</button>
