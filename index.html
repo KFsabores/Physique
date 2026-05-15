@@ -778,7 +778,6 @@
             // Após login, inicializa planilha
             await initializeOrGetSpreadsheet();
             showAuthenticatedUI();
-            await loadAllDataFromSheet();
         } catch (err) {
             console.error(err);
             sheetStatusSpan.innerText = "Erro ao obter perfil.";
@@ -787,7 +786,7 @@
     
     async function initializeOrGetSpreadsheet() {
         try {
-            sheetStatusSpan.innerText = "📁 Sincronizando com Google Drive...";
+            sheetStatusSpan.innerText = "📁 Sincronizando com Drive...";
             const fileName = "FitManager_Physique";
             
             const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false&fields=files(id, name)`, {
@@ -814,10 +813,11 @@
             }
             
             await ensureSheetsExist();
-            sheetStatusSpan.innerText = "✅ Conectado com sucesso!";
+            sheetStatusSpan.innerText = "✅ Conectado!";
+            await loadAllDataFromSheet();
         } catch (error) {
             console.error("Erro na inicialização:", error);
-            sheetStatusSpan.innerHTML = '❌ Erro de Sincronização. <button onclick="location.reload()" style="padding:2px 5px;">Reconectar</button>';
+            sheetStatusSpan.innerHTML = '❌ Erro de Sincronização. <button onclick="location.reload()" style="padding:5px; border-radius:5px; cursor:pointer;">Tentar Novamente</button>';
         }
     }
     
@@ -882,15 +882,14 @@
     
     async function loadAllDataFromSheet() {
         if (!spreadsheetId) return;
-        sheetStatusSpan.innerText = "📥 Atualizando dados...";
+        sheetStatusSpan.innerText = "📥 Carregando dados...";
         try {
-            const [alunosRows, presencasRows, obsRows, evalRows, financeRows] = await Promise.all([
-                readSheet(SHEET_NAMES.STUDENTS),
-                readSheet(SHEET_NAMES.ATTENDANCE),
-                readSheet(SHEET_NAMES.OBSERVATIONS),
-                readSheet(SHEET_NAMES.EVALUATIONS),
-                readSheet(SHEET_NAMES.FINANCE)
-            ]);
+            // Carregamento sequencial para evitar falhas em massa
+            const alunosRows = await readSheet(SHEET_NAMES.STUDENTS).catch(() => []);
+            const presencasRows = await readSheet(SHEET_NAMES.ATTENDANCE).catch(() => []);
+            const obsRows = await readSheet(SHEET_NAMES.OBSERVATIONS).catch(() => []);
+            const evalRows = await readSheet(SHEET_NAMES.EVALUATIONS).catch(() => []);
+            const financeRows = await readSheet(SHEET_NAMES.FINANCE).catch(() => []);
 
             sheetDataCache.students = (alunosRows || []).filter(r => r[0] && String(r[0]).startsWith('s_')).map(r => ({
                 id: String(r[0]), nome: r[1]||'', telefone: r[2]||'', objetivo: r[3]||'', dataCad: r[4]||''
@@ -917,8 +916,8 @@
             checkFinancialStatus();
             sheetStatusSpan.innerText = `📊 Online (${sheetDataCache.students.length} alunos)`;
         } catch (e) {
-            console.error("Erro no carregamento:", e);
-            sheetStatusSpan.innerText = "❌ Falha ao ler planilha.";
+            console.error("Erro fatal no carregamento:", e);
+            sheetStatusSpan.innerText = "❌ Falha crítica ao ler planilha.";
         }
     }
 
