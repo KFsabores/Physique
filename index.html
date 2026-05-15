@@ -504,7 +504,7 @@
         wrapper.appendChild(btn);
         
         window.google.accounts.id.initialize({
-            client_id: '1060747367874-8g8tq8vdtvsnruh7cmlk1540c62s3l0t.apps.googleusercontent.com',  // Client ID público para demonstração (funciona com qualquer conta Google habilitando API Sheets? É um ID demo, mas para produção deve registrar seu app)
+            client_id: '115138407454-st6indfe1snrq3106nquqqmujv17js2t.apps.googleusercontent.com',  // Seu Client ID oficial
             callback: handleCredentialResponse,
             auto_select: false,
             context: 'signin'
@@ -545,7 +545,7 @@
     
     function initTokenClient() {
         window.tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: '1060747367874-8g8tq8vdtvsnruh7cmlk1540c62s3l0t.apps.googleusercontent.com',
+            client_id: '115138407454-st6indfe1snrq3106nquqqmujv17js2t.apps.googleusercontent.com',
             scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
             callback: (tokenResponse) => {
                 if (tokenResponse.error) {
