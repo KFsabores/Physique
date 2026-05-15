@@ -1006,37 +1006,55 @@
     }
 
     function openFinanceModal() {
-        const currentMonth = new Date().toISOString().slice(0, 7);
         const container = document.getElementById('financeList');
-        
+        if (!container) {
+            alert("Erro interno: Container de lista não encontrado.");
+            return;
+        }
+
+        // Limpa e mostra "Carregando"
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Carregando lista financeira...</div>';
+        openModal('modalFinance');
+
+        const currentMonth = new Date().toISOString().slice(0, 7);
         let paidCount = 0;
         let pendingCount = 0;
         
+        if (!sheetDataCache.students || sheetDataCache.students.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px;">Nenhum aluno encontrado para cobrança.</div>';
+            return;
+        }
+
         const listHtml = sheetDataCache.students.map(aluno => {
             const isPago = sheetDataCache.finance.some(f => f.alunoId == aluno.id && f.mesRef === currentMonth);
             if (isPago) paidCount++; else pendingCount++;
             
             return `
-                <div class="student-item ${isPago ? 'paid' : 'unpaid'}" style="margin: 5px 0; padding: 12px;">
+                <div class="student-item ${isPago ? 'paid' : 'unpaid'}" style="margin: 8px 0; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); border-radius: 15px;">
                     <div style="flex:1;">
-                        <strong style="font-size:0.95rem;">${escapeHtml(aluno.nome)}</strong><br>
-                        <small style="opacity:0.8;">${isPago ? '✅ Mensalidade Recebida' : '❌ Aguardando Pagamento'}</small>
+                        <strong style="font-size:1rem; color: #fff;">${escapeHtml(aluno.nome)}</strong><br>
+                        <small style="color: ${isPago ? '#2ed573' : '#ff4757'}; font-weight: bold;">
+                            ${isPago ? '✅ PAGO' : '❌ PENDENTE'}
+                        </small>
                     </div>
-                    ${!isPago ? `<button onclick="registrarPagamento('${aluno.id}')" style="padding:8px 15px; font-size:0.75rem; background:var(--accent-color); color:#000; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">💰 Pagar</button>` : ''}
+                    ${!isPago ? `
+                        <button onclick="registrarPagamento('${aluno.id}')" 
+                                style="background: var(--accent-color); color: #000; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: var(--neon-glow);">
+                            💰 PAGAR
+                        </button>` : ''}
                 </div>
             `;
         }).join('');
 
         const summaryHtml = `
-            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 20px; margin-bottom: 20px; display: flex; justify-content: space-around; border: 1px solid var(--glass-border);">
-                <div style="text-align:center;"><div style="color:#2ed573; font-size:1.2rem; font-weight:bold;">${paidCount}</div><div style="font-size:0.7rem; opacity:0.7; text-transform:uppercase;">Pagos</div></div>
-                <div style="text-align:center;"><div style="color:#ff4757; font-size:1.2rem; font-weight:bold;">${pendingCount}</div><div style="font-size:0.7rem; opacity:0.7; text-transform:uppercase;">Pendentes</div></div>
-                <div style="text-align:center;"><div style="color:var(--accent-color); font-size:1.2rem; font-weight:bold;">${sheetDataCache.students.length}</div><div style="font-size:0.7rem; opacity:0.7; text-transform:uppercase;">Total</div></div>
+            <div style="background: rgba(254, 235, 26, 0.1); padding: 15px; border-radius: 20px; margin-bottom: 25px; display: flex; justify-content: space-around; border: 1px solid var(--border-color);">
+                <div style="text-align:center;"><div style="color:#2ed573; font-size:1.4rem; font-weight:bold;">${paidCount}</div><div style="font-size:0.7rem; opacity:0.8;">PAGOS</div></div>
+                <div style="text-align:center;"><div style="color:#ff4757; font-size:1.4rem; font-weight:bold;">${pendingCount}</div><div style="font-size:0.7rem; opacity:0.8;">PENDENTES</div></div>
+                <div style="text-align:center;"><div style="color:var(--accent-color); font-size:1.4rem; font-weight:bold;">${sheetDataCache.students.length}</div><div style="font-size:0.7rem; opacity:0.8;">TOTAL</div></div>
             </div>
         `;
         
         container.innerHTML = summaryHtml + listHtml;
-        openModal('modalFinance');
     }
 
     async function registrarPagamento(alunoId) {
