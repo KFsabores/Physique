@@ -376,7 +376,16 @@
             const [s, a, o, e, f] = await Promise.all([read(SHEET_NAMES.STUDENTS), read(SHEET_NAMES.ATTENDANCE), read(SHEET_NAMES.OBSERVATIONS), read(SHEET_NAMES.EVALUATIONS), read(SHEET_NAMES.FINANCE)]);
             
             sheetDataCache.students = s.slice(1).filter(r => r[0]).map((r, i) => ({ id: r[0], nome: r[1], whats: r[2], obj: r[3], row: i+2 }));
-            sheetDataCache.attendances = a.slice(1).filter(r => r[0]).map((r, i) => ({ id: r[0], aid: r[1], data: r[2], hora: r[3], row: i+2 }));
+            sheetDataCache.attendances = a.map((r, i) => ({ vals: r, row: i + 1 }))
+                               .slice(1)
+                               .filter(item => item.vals[0] && String(item.vals[0]).startsWith('p_'))
+                               .map(item => ({ 
+                                   id: item.vals[0], 
+                                   aid: item.vals[1], 
+                                   data: item.vals[2], 
+                                   hora: item.vals[3], 
+                                   row: item.row 
+                               }));
             sheetDataCache.observations = o.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], texto: r[3] }));
             sheetDataCache.evaluations = e.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], peso: r[3], imc: r[5], cintura: r[6], quadril: r[7], braco: r[8], coxa: r[9], notas: r[10] }));
             sheetDataCache.finance = f.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], mes: r[4] }));
@@ -408,8 +417,26 @@
 
     async function togglePres(id) {
         const rec = sheetDataCache.attendances.find(a => a.id == id);
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.ATTENDANCE}!A${rec.row}:Z${rec.row}:clear`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } });
-        await loadData();
+        if (!rec) return;
+        
+        // Feedback visual imediato
+        const btn = document.querySelector(`button[onclick="togglePres('${id}')"]`);
+        if (btn) {
+            btn.innerHTML = "⏳...";
+            btn.style.background = "#555";
+        }
+
+        try {
+            const range = `${SHEET_NAMES.ATTENDANCE}!A${rec.row}:E${rec.row}`;
+            await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:clear`, { 
+                method: 'POST', 
+                headers: { Authorization: `Bearer ${accessToken}` } 
+            });
+            await loadData(); // Isso já chama renderAttendanceList()
+        } catch (e) {
+            alert("Erro ao desmarcar. Tente novamente.");
+            await loadData();
+        }
     }
 
     async function markPres(aid, h) {
