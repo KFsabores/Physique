@@ -582,39 +582,52 @@
         try {
             sheetStatusSpan.innerText = "📁 Verificando/Criando planilha no Drive...";
             const fileName = "FitManager_Physique";
-            // Pesquisar se já existe
-        const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`, {
-            headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        const searchData = await searchRes.json();
-        if (searchData.files && searchData.files.length > 0) {
-            spreadsheetId = searchData.files[0].id;
-            sheetStatusSpan.innerText = `✅ Planilha existente: ${fileName}`;
-            await ensureSheetsExist();
-        } else {
-            // criar nova planilha
-            const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    properties: { title: fileName },
-                    sheets: [
-                        { properties: { title: SHEET_NAMES.STUDENTS } },
-                        { properties: { title: SHEET_NAMES.ATTENDANCE } },
-                        { properties: { title: SHEET_NAMES.OBSERVATIONS } }
-                    ]
-                })
+            
+            const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`, {
+                headers: { Authorization: `Bearer ${accessToken}` }
             });
-            const newSheet = await createRes.json();
-            spreadsheetId = newSheet.spreadsheetId;
-            sheetStatusSpan.innerText = `🆕 Planilha criada: ${fileName}`;
-            // Inicializar cabeçalhos
-            await initSheetHeaders();
-        }
+            
+            const searchData = await searchRes.json();
+            
+            // Se houver erro na resposta (ex: API desativada ou falta de permissão)
+            if (searchData.error) {
+                console.error("Erro da API:", searchData.error);
+                if (searchData.error.status === "PERMISSION_DENIED") {
+                    alert("Acesso Negado: Certifique-se de que ativou a 'Google Drive API' e 'Google Sheets API' no Google Cloud Console e MARCOU AS CAIXAS no login.");
+                } else {
+                    alert("Erro do Google: " + searchData.error.message);
+                }
+                return;
+            }
+
+            if (searchData.files && searchData.files.length > 0) {
+                spreadsheetId = searchData.files[0].id;
+                sheetStatusSpan.innerText = `✅ Planilha encontrada: ${fileName}`;
+                await ensureSheetsExist();
+            } else {
+                const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        properties: { title: fileName },
+                        sheets: [
+                            { properties: { title: SHEET_NAMES.STUDENTS } },
+                            { properties: { title: SHEET_NAMES.ATTENDANCE } },
+                            { properties: { title: SHEET_NAMES.OBSERVATIONS } }
+                        ]
+                    })
+                });
+                const newSheet = await createRes.json();
+                if (newSheet.error) throw new Error(newSheet.error.message);
+                
+                spreadsheetId = newSheet.spreadsheetId;
+                sheetStatusSpan.innerText = `🆕 Planilha criada com sucesso!`;
+                await initSheetHeaders();
+            }
         } catch (error) {
-            console.error("Erro ao inicializar planilha:", error);
-            alert("Erro crítico: O site não conseguiu criar a planilha no seu Drive. Certifique-se de que você MARCOU TODAS AS CAIXAS de permissão na tela de login do Google.");
-            sheetStatusSpan.innerText = "❌ Falha ao conectar com o Drive.";
+            console.error("Erro completo:", error);
+            alert("Falha na comunicação: " + error.message);
+            sheetStatusSpan.innerText = "❌ Erro de conexão.";
         }
     }
     
