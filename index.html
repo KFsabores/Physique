@@ -204,7 +204,7 @@
         </div>
         <div style="display:flex; gap:10px; margin-bottom:15px;">
             <input type="date" id="activityDate" style="margin-bottom:0;" onchange="loadDayActivity(this.value)">
-            <button onclick="copyLastActivity()" style="background:#333; color:var(--accent-color); border:none; padding:10px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:0.75rem;">REPETIR TREINO</button>
+            <button onclick="repeatForToday()" style="background:#333; color:var(--accent-color); border:none; padding:10px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:0.75rem;">COPIAR P/ HOJE</button>
         </div>
         <textarea id="activityText" rows="10" placeholder="Exercícios..."></textarea>
         <button class="primary" onclick="saveActivity()">SALVAR</button>
@@ -403,9 +403,30 @@
     }
 
     // OUTRAS FUNÇÕES
-    function loadDayActivity(date) { const act = sheetDataCache.activities.find(a => a.data == date); document.getElementById('activityText').value = act ? act.texto : ''; }
-    async function saveActivity() { const d = document.getElementById('activityDate').value; const t = document.getElementById('activityText').value; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.ACTIVITIES}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`act_${Date.now()}`, d, t]] }) }); await loadData(); alert("Salvo!"); }
-    function copyLastActivity() { if (sheetDataCache.activities.length > 0) document.getElementById('activityText').value = sheetDataCache.activities[sheetDataCache.activities.length - 1].texto; }
+    function loadDayActivity(date) {
+        const act = sheetDataCache.activities.find(a => a.data == date);
+        document.getElementById('activityText').value = act ? act.texto : '';
+    }
+
+    async function saveActivity() {
+        const date = document.getElementById('activityDate').value;
+        const text = document.getElementById('activityText').value;
+        if (!text) return alert("Digite o treino!");
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.ACTIVITIES}!A:A:append?valueInputOption=USER_ENTERED`, { 
+            method: 'POST', 
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ values: [[`act_${Date.now()}`, date, text]] }) 
+        });
+        await loadData();
+        alert("Treino salvo com sucesso!");
+    }
+
+    function repeatForToday() {
+        const text = document.getElementById('activityText').value;
+        if (!text) return alert("Escolha um treino no calendário primeiro para copiar!");
+        document.getElementById('activityDate').value = new Date().toISOString().slice(0, 10);
+        alert("Data alterada para HOJE. Clique em SALVAR para confirmar a cópia.");
+    }
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function escapeHtml(s) { return s ? s.replace(/[&<>]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[t] || t)) : ''; }
