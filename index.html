@@ -327,25 +327,29 @@
         .modal {
             display: none;
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(8px);
-            z-index: 1000;
+            top: 0; left: 0; 
+            width: 100vw; 
+            height: 100vh;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
+            z-index: 9999; /* Garante que fique acima de tudo */
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 10px;
         }
 
         .modal-content {
             background: var(--card-bg);
-            padding: 2.5rem;
-            border-radius: 2.5rem;
-            width: 100%;
-            max-width: 600px;
+            padding: 2rem;
+            border-radius: 2rem;
+            width: 95%;
+            max-width: 550px;
             border: 1px solid var(--border-color);
             box-shadow: var(--neon-glow);
             max-height: 90vh;
             overflow-y: auto;
+            position: relative;
+            margin: auto;
         }
 
         .modal-header {
@@ -783,59 +787,41 @@
     
     async function initializeOrGetSpreadsheet() {
         try {
-            sheetStatusSpan.innerText = "📁 Verificando/Criando planilha no Drive...";
+            sheetStatusSpan.innerText = "📁 Sincronizando com Google Drive...";
             const fileName = "FitManager_Physique";
             
-            const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`, {
+            const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false&fields=files(id, name)`, {
                 headers: { Authorization: `Bearer ${accessToken}` }
             });
-            
             const searchData = await searchRes.json();
             
-            // Se houver erro na resposta (ex: API desativada ou falta de permissão)
-            if (searchData.error) {
-                console.error("Erro da API:", searchData.error);
-                if (searchData.error.status === "PERMISSION_DENIED") {
-                    alert("Acesso Negado: Certifique-se de que ativou a 'Google Drive API' e 'Google Sheets API' no Google Cloud Console e MARCOU AS CAIXAS no login.");
-                } else {
-                    alert("Erro do Google: " + searchData.error.message);
-                }
-                return;
-            }
-
             if (searchData.files && searchData.files.length > 0) {
                 spreadsheetId = searchData.files[0].id;
-                sheetStatusSpan.innerText = `✅ Planilha encontrada: ${fileName}`;
-                await ensureSheetsExist();
+                console.log("Planilha encontrada:", spreadsheetId);
             } else {
+                console.log("Criando nova planilha...");
                 const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         properties: { title: fileName },
-                        sheets: [
-                            { properties: { title: SHEET_NAMES.STUDENTS } },
-                            { properties: { title: SHEET_NAMES.ATTENDANCE } },
-                            { properties: { title: SHEET_NAMES.OBSERVATIONS } }
-                        ]
+                        sheets: Object.values(SHEET_NAMES).map(title => ({ properties: { title } }))
                     })
                 });
                 const newSheet = await createRes.json();
-                if (newSheet.error) throw new Error(newSheet.error.message);
-                
                 spreadsheetId = newSheet.spreadsheetId;
-                sheetStatusSpan.innerText = `🆕 Planilha criada com sucesso!`;
                 await initSheetHeaders();
             }
+            
+            await ensureSheetsExist();
+            sheetStatusSpan.innerText = "✅ Conectado com sucesso!";
         } catch (error) {
-            console.error("Erro completo:", error);
-            alert("Falha na comunicação: " + error.message);
-            sheetStatusSpan.innerText = "❌ Erro de conexão.";
+            console.error("Erro na inicialização:", error);
+            sheetStatusSpan.innerHTML = '❌ Erro de Sincronização. <button onclick="location.reload()" style="padding:2px 5px;">Reconectar</button>';
         }
     }
     
     async function ensureSheetsExist() {
-        // Verifica se as três abas existem, senão cria.
         const getSpreadsheet = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
             headers: { Authorization: `Bearer ${accessToken}` }
         });
@@ -854,15 +840,10 @@
     }
     
     async function initSheetHeaders() {
-        // Alunos: ID, Nome, Telefone, Objetivo, DataCadastro
         await updateSheetRange(SHEET_NAMES.STUDENTS, 'A1:E1', [['ID','Nome','Telefone','Objetivo','DataCadastro']]);
-        // Presenças: ID, AlunoID, Data, Horário, Status
         await updateSheetRange(SHEET_NAMES.ATTENDANCE, 'A1:E1', [['ID','AlunoID','Data','Horario','Status']]);
-        // Observações: ID, AlunoID, DataHora, Observacao
         await updateSheetRange(SHEET_NAMES.OBSERVATIONS, 'A1:D1', [['ID','AlunoID','DataHora','Observacao']]);
-        // Avaliações: ID, AlunoID, Data, Peso, Altura, IMC, Medidas (Cintura, Quadril, BracoD, BracoE, CoxaD, CoxaE)
         await updateSheetRange(SHEET_NAMES.EVALUATIONS, 'A1:K1', [['ID','AlunoID','Data','Peso','Altura','IMC','Cintura','Quadril','BracoD','CoxaD','Notas']]);
-        // Financeiro: ID, AlunoID, Data, Valor, MesReferencia
         await updateSheetRange(SHEET_NAMES.FINANCE, 'A1:E1', [['ID','AlunoID','Data','Valor','MesReferencia']]);
     }
     
@@ -901,50 +882,43 @@
     
     async function loadAllDataFromSheet() {
         if (!spreadsheetId) return;
-        sheetStatusSpan.innerText = "📥 Carregando dados...";
+        sheetStatusSpan.innerText = "📥 Atualizando dados...";
         try {
-            const alunosRows = await readSheet(SHEET_NAMES.STUDENTS);
-            // Pula cabeçalho: Filtra apenas linhas que tenham o ID começando com 's_'
-            const alunosData = alunosRows.filter(row => row[0] && String(row[0]).startsWith('s_'));
-            sheetDataCache.students = alunosData.map(row => ({ 
-                id: String(row[0]), 
-                nome: row[1]||'', 
-                telefone: row[2]||'', 
-                objetivo: row[3]||'', 
-                dataCad: row[4]||'' 
+            const [alunosRows, presencasRows, obsRows, evalRows, financeRows] = await Promise.all([
+                readSheet(SHEET_NAMES.STUDENTS),
+                readSheet(SHEET_NAMES.ATTENDANCE),
+                readSheet(SHEET_NAMES.OBSERVATIONS),
+                readSheet(SHEET_NAMES.EVALUATIONS),
+                readSheet(SHEET_NAMES.FINANCE)
+            ]);
+
+            sheetDataCache.students = (alunosRows || []).filter(r => r[0] && String(r[0]).startsWith('s_')).map(r => ({
+                id: String(r[0]), nome: r[1]||'', telefone: r[2]||'', objetivo: r[3]||'', dataCad: r[4]||''
             }));
             
-            const presencasRows = await readSheet(SHEET_NAMES.ATTENDANCE);
-            const presencasData = presencasRows.filter(row => row[0] && String(row[0]).startsWith('p_'));
-            sheetDataCache.attendances = presencasData.map(r => ({ 
-                id: r[0], alunoId: String(r[1]), data: r[2], horario: r[3], status: r[4] 
+            sheetDataCache.attendances = (presencasRows || []).filter(r => r[0] && String(r[0]).startsWith('p_')).map(r => ({
+                id: r[0], alunoId: String(r[1]), data: r[2], horario: r[3], status: r[4]
             }));
             
-            const obsRows = await readSheet(SHEET_NAMES.OBSERVATIONS);
-            const obsData = obsRows.filter(row => row[0] && String(row[0]).startsWith('o_'));
-            sheetDataCache.observations = obsData.map(r => ({ 
-                id: r[0], alunoId: String(r[1]), dataHora: r[2], observacao: r[3] 
+            sheetDataCache.observations = (obsRows || []).filter(r => r[0] && String(r[0]).startsWith('o_')).map(r => ({
+                id: r[0], alunoId: String(r[1]), dataHora: r[2], observacao: r[3]
             }));
             
-            const evalRows = await readSheet(SHEET_NAMES.EVALUATIONS);
-            const evalData = evalRows.filter(row => row[0] && String(row[0]).startsWith('ev_'));
-            sheetDataCache.evaluations = evalData.map(r => ({ 
-                id: r[0], alunoId: String(r[1]), data: r[2], peso: r[3], altura: r[4], imc: r[5], notas: r[10] 
+            sheetDataCache.evaluations = (evalRows || []).filter(r => r[0] && String(r[0]).startsWith('ev_')).map(r => ({
+                id: r[0], alunoId: String(r[1]), data: r[2], peso: r[3], altura: r[4], imc: r[5], notas: r[10]
             }));
             
-            const financeRows = await readSheet(SHEET_NAMES.FINANCE);
-            const financeData = financeRows.filter(row => row[0] && String(row[0]).startsWith('f_'));
-            sheetDataCache.finance = financeData.map(r => ({ 
-                id: r[0], alunoId: String(r[1]), data: r[2], valor: r[3], mesRef: r[4] 
+            sheetDataCache.finance = (financeRows || []).filter(r => r[0] && String(r[0]).startsWith('f_')).map(r => ({
+                id: r[0], alunoId: String(r[1]), data: r[2], valor: r[3], mesRef: r[4]
             }));
 
             renderStudentsList();
             updateStudentSelects();
             checkFinancialStatus();
-            sheetStatusSpan.innerText = `📊 Dados sincronizados (${sheetDataCache.students.length} alunos)`;
+            sheetStatusSpan.innerText = `📊 Online (${sheetDataCache.students.length} alunos)`;
         } catch (e) {
-            console.error("Erro ao carregar dados:", e);
-            sheetStatusSpan.innerText = "❌ Erro na sincronização.";
+            console.error("Erro no carregamento:", e);
+            sheetStatusSpan.innerText = "❌ Falha ao ler planilha.";
         }
     }
 
