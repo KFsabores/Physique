@@ -579,10 +579,10 @@
     }
     
     async function initializeOrGetSpreadsheet() {
-        sheetStatusSpan.innerText = "📁 Verificando/Criando planilha no Drive...";
-        // Nome da planilha: "FitManager_<email>"
-        const fileName = `FitManager_${currentUser.email.split('@')[0]}`;
-        // Pesquisar se já existe
+        try {
+            sheetStatusSpan.innerText = "📁 Verificando/Criando planilha no Drive...";
+            const fileName = "FitManager_Physique";
+            // Pesquisar se já existe
         const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`, {
             headers: { Authorization: `Bearer ${accessToken}` }
         });
@@ -610,6 +610,11 @@
             sheetStatusSpan.innerText = `🆕 Planilha criada: ${fileName}`;
             // Inicializar cabeçalhos
             await initSheetHeaders();
+        }
+        } catch (error) {
+            console.error("Erro ao inicializar planilha:", error);
+            alert("Erro crítico: O site não conseguiu criar a planilha no seu Drive. Certifique-se de que você MARCOU TODAS AS CAIXAS de permissão na tela de login do Google.");
+            sheetStatusSpan.innerText = "❌ Falha ao conectar com o Drive.";
         }
     }
     
@@ -652,12 +657,18 @@
     
     async function appendRow(sheetName, rowValues) {
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}!A:Z:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ values: [rowValues] })
-        });
-        return res.json();
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ values: [rowValues] })
+            });
+            if (!res.ok) throw new Error("Falha ao gravar dados.");
+            return res.json();
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao salvar dados na planilha. Verifique sua conexão.");
+        }
     }
     
     async function readSheet(sheetName) {
