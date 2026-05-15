@@ -3,1274 +3,450 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>FitManager Pro - Presença e Acompanhamento</title>
-    <!-- Google Fonts + Material Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <title>FitManager Pro - Physique</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0,1" />
-    <!-- Firebase SDKs (Auth + Sheets via Google APIs client) -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <style>
         :root {
             --bg-color: #000000;
-            --container-bg: rgba(20, 20, 20, 0.8);
-            --card-bg: rgba(30, 30, 30, 0.95);
+            --container-bg: rgba(20, 20, 20, 0.9);
+            --card-bg: rgba(30, 30, 30, 0.98);
             --text-primary: #ffffff;
             --text-secondary: #b0b0b0;
-            --accent-color: #feeb1a; /* Amarelo do Logo */
-            --neon-glow: 0 0 10px rgba(254, 235, 26, 0.8), 0 0 20px rgba(254, 235, 26, 0.4);
-            --border-color: rgba(254, 235, 26, 0.3);
-            --input-bg: #1a1a1a;
-            --input-border: #333;
-            --btn-bg: #feeb1a;
-            --btn-text: #000000;
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-color: #feeb1a;
+            --neon-glow: 0 0 15px rgba(254, 235, 26, 0.5);
+            --border-color: rgba(254, 235, 26, 0.2);
+            --glass-border: rgba(255, 255, 255, 0.05);
             --transition: all 0.3s ease;
         }
 
-        .light-theme {
-            --bg-color: #f4f7f6;
-            --container-bg: rgba(255, 255, 255, 0.9);
-            --card-bg: #ffffff;
-            --text-primary: #1a1a1a;
-            --text-secondary: #555555;
-            --accent-color: #d4af37; /* Dourado mais sóbrio para o claro */
-            --neon-glow: none;
-            --border-color: #dddddd;
-            --input-bg: #ffffff;
-            --input-border: #cccccc;
-            --btn-bg: #1a1a1a;
-            --btn-text: #ffffff;
-            --glass-border: rgba(0, 0, 0, 0.1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            background-image: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%);
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { 
+            background: var(--bg-color); 
+            color: var(--text-primary); 
             min-height: 100vh;
-            padding: 20px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            color: var(--text-primary);
-            transition: var(--transition);
+            overflow-x: hidden;
         }
 
-        .light-theme body {
-            background-image: none;
-            background-color: var(--bg-color);
-        }
-
-        /* Glassmorphism container */
         .app-container {
-            max-width: 1100px;
             width: 100%;
+            max-width: 1000px;
             background: var(--container-bg);
-            backdrop-filter: blur(15px);
-            border-radius: 2.5rem;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
+            backdrop-filter: blur(20px);
+            border-radius: 2rem;
             padding: 2rem;
             border: 1px solid var(--glass-border);
-            transition: var(--transition);
-            position: relative;
-            min-height: 85vh; /* Garante que não fique esmagado no PC */
-            display: flex;
-            flex-direction: column;
+            margin: 20px 10px;
+            min-height: 85vh;
         }
 
-        /* Theme Toggle Button */
-        .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
+        header { text-align: center; margin-bottom: 2.5rem; }
+        .logo-img { width: 100px; filter: drop-shadow(var(--neon-glow)); margin-bottom: 15px; }
+        h1 { color: var(--accent-color); text-transform: uppercase; letter-spacing: 2px; font-size: 2.2rem; }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+        .btn-action {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            color: var(--accent-color);
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
+            color: #fff;
+            padding: 22px 10px;
+            border-radius: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn-action:hover { background: var(--accent-color); color: #000; box-shadow: var(--neon-glow); transform: translateY(-3px); }
+        .btn-action span { font-size: 2.2rem; }
+
+        .btn-payment-special {
+            grid-column: 1 / -1;
+            background: var(--accent-color);
+            color: #000;
+            font-weight: 900;
+            padding: 22px;
+            border-radius: 1.5rem;
+            border: none;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            z-index: 100;
-            box-shadow: var(--neon-glow);
-            transition: var(--transition);
-        }
-
-        .theme-toggle:hover {
-            transform: rotate(30deg) scale(1.1);
-        }
-
-        /* Header e status */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 2.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
             gap: 15px;
-        }
-
-        .logo-img {
-            width: 80px;
-            height: 80px;
-            object-fit: contain;
-            filter: drop-shadow(var(--neon-glow));
-            transition: var(--transition);
-            animation: float 4s ease-in-out infinite;
-        }
-
-        .logo-big {
-            width: 150px;
-            height: 150px;
             margin-bottom: 10px;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
-        }
-
-        .logo-text h1 {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--accent-color);
-            text-shadow: var(--neon-glow);
-            letter-spacing: -1px;
+            box-shadow: var(--neon-glow);
             text-transform: uppercase;
-        }
-
-        .logo-text p {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: var(--card-bg);
-            padding: 10px 20px;
-            border-radius: 60px;
-            border: 1px solid var(--border-color);
-            box-shadow: var(--neon-glow);
-        }
-
-        .user-avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid var(--accent-color);
-        }
-
-        .user-email {
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .btn-google {
-            background: #ffffff;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 40px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: var(--transition);
-            color: #000000;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .btn-google:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        }
-
-        .btn-logout {
-            background: #ff4757;
-            color: white;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 40px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .btn-logout:hover { opacity: 0.9; }
-
-        /* dashboard */
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 30px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 2rem;
-            padding: 1.8rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            border: 1px solid var(--glass-border);
-            transition: var(--transition);
-        }
-
-        .card:hover {
-            border-color: var(--accent-color);
-            box-shadow: var(--neon-glow);
-            transform: translateY(-5px);
-        }
-
-        .card h3 {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 1.4rem;
-            margin-bottom: 1.5rem;
-            color: var(--accent-color);
-            text-shadow: var(--neon-glow);
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        input, select, textarea {
-            padding: 14px 18px;
-            border-radius: 18px;
-            border: 1px solid var(--input-border);
-            background: var(--input-bg);
-            color: var(--text-primary);
-            font-size: 1rem;
-            outline: none;
-            transition: var(--transition);
-        }
-
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 2px rgba(254, 235, 26, 0.2);
-        }
-
-        button {
-            background: var(--btn-bg);
-            color: var(--btn-text);
-            font-weight: 700;
-            border: none;
-            padding: 14px;
-            border-radius: 18px;
-            cursor: pointer;
-            transition: var(--transition);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        button:hover {
-            filter: brightness(1.1);
-            box-shadow: var(--neon-glow);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-        }
-
-        .student-list {
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 10px;
-        }
-
-        .student-list::-webkit-scrollbar { width: 6px; }
-        .student-list::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; }
-
-        .student-item {
-            background: var(--input-bg);
-            margin-bottom: 12px;
-            padding: 15px;
-            border-radius: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid var(--glass-border);
-        }
-
-        .student-name {
-            font-weight: 700;
-            color: var(--text-primary);
             font-size: 1.1rem;
         }
 
-        /* Modais */
         .modal {
             display: none;
             position: fixed;
-            top: 0; left: 0; 
-            width: 100vw; 
-            height: 100vh;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(10px);
-            z-index: 9999; /* Garante que fique acima de tudo */
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            backdrop-filter: blur(12px);
+            z-index: 100000;
             justify-content: center;
             align-items: center;
-            padding: 10px;
+            padding: 15px;
         }
-
         .modal-content {
             background: var(--card-bg);
-            padding: 2rem;
-            border-radius: 2rem;
-            width: 95%;
-            max-width: 550px;
-            border: 1px solid var(--border-color);
-            box-shadow: var(--neon-glow);
-            max-height: 90vh;
+            padding: 2.5rem 1.8rem;
+            border-radius: 2.5rem;
+            width: 100%;
+            max-width: 580px;
+            max-height: 92vh;
             overflow-y: auto;
-            position: relative;
-            margin: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            color: var(--accent-color);
-        }
-
-        /* Alertas */
-        .alert-banner {
-            background: rgba(255, 71, 87, 0.2);
-            border: 1px solid #ff4757;
-            color: #ff4757;
-            padding: 12px 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
-        }
-
-        /* Indicadores Financeiros */
-        .student-item.paid { border-left: 5px solid #2ed573; }
-        .student-item.unpaid { border-left: 5px solid #ff4757; }
-
-        .finance-status {
-            font-size: 0.75rem;
-            font-weight: 700;
-            margin-top: 5px;
-        }
-
-        .status-paid { color: #2ed573; }
-        .status-unpaid { color: #ff4757; }
-
-        /* Botões de Horários */
-        .presence-options {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .btn-time {
-            padding: 6px 10px;
-            font-size: 0.75rem;
-            border-radius: 10px;
-            background: var(--input-bg);
-            color: var(--accent-color);
             border: 1px solid var(--border-color);
-            flex: 1;
+            position: relative;
         }
 
-        .btn-time:hover { background: var(--accent-color); color: #000; }
-
-        /* Ações Rápidas */
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 12px;
-            margin-bottom: 25px;
-        }
-
-        .btn-action {
+        .student-item {
+            background: rgba(255,255,255,0.04);
+            padding: 18px;
+            border-radius: 18px;
+            margin-bottom: 12px;
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            gap: 8px;
-            padding: 15px;
-            border-radius: 20px;
-            background: var(--card-bg);
-            border: 1px solid var(--glass-border);
-            color: var(--text-primary);
-            font-size: 0.8rem;
+            border: 1px solid rgba(255,255,255,0.05);
         }
+        .student-item.paid { border-left: 6px solid #2ed573; }
+        .student-item.unpaid { border-left: 6px solid #ff4757; }
 
-        .btn-action span { font-size: 1.8rem; color: var(--accent-color); }
-        .btn-action:hover { border-color: var(--accent-color); box-shadow: var(--neon-glow); }
-
-        #obsPreview {
-            background: var(--input-bg);
-            border: 1px solid var(--glass-border);
-            color: var(--text-secondary);
+        input, select, textarea {
+            width: 100%;
+            background: #111;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 16px;
+            border-radius: 15px;
+            margin-bottom: 18px;
+            font-size: 1rem;
         }
+        button.primary { width: 100%; background: var(--accent-color); color: #000; border: none; padding: 18px; border-radius: 15px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
 
-        @media (max-width: 768px) {
-            .app-container { padding: 1.5rem; border-radius: 1.5rem; }
-            .header { flex-direction: column; text-align: center; }
-            .logo-container { flex-direction: column; }
-            .theme-toggle { top: 10px; right: 10px; }
+        #sheetStatus { font-size: 0.85rem; opacity: 0.7; margin-top: 2.5rem; text-align: center; }
+
+        @media (max-width: 600px) {
+            .app-container { padding: 1.5rem 1rem; border-radius: 1.5rem; }
+            .quick-actions { grid-template-columns: 1fr 1fr; }
+            h1 { font-size: 1.8rem; }
         }
     </style>
 </head>
 <body>
-<div class="app-container" id="appRoot">
-    <button class="theme-toggle" id="themeToggle" title="Alternar Tema">
-        <span class="material-symbols-outlined">dark_mode</span>
-    </button>
-    <!-- Estado: não autenticado -->
-    <div id="unauthenticatedView" style="text-align: center; padding: 2rem;">
-        <div class="logo-container" style="justify-content: center; margin-bottom: 2.5rem; flex-direction: column;">
-            <img src="logo.png" alt="Physique Logo" class="logo-img logo-big" onerror="this.src='https://via.placeholder.com/180?text=Physique'">
-            <div class="logo-text">
-                <h1>Physique</h1>
-                <p>Centro de Treinamento</p>
-            </div>
-        </div>
-        <div style="background: var(--card-bg); border-radius: 2.5rem; padding: 2.5rem; max-width: 500px; margin: 0 auto; border: 1px solid var(--border-color); box-shadow: var(--neon-glow);">
-            <h2 style="color: var(--accent-color); text-shadow: var(--neon-glow); margin-bottom: 1rem;">Acesse sua conta Google</h2>
-            <p style="color: var(--text-secondary); margin: 1.5rem 0; line-height: 1.6;">A planilha será criada automaticamente no seu Google Drive.<br>Todos os dados de alunos, presenças e anotações ficarão seguros.</p>
-            <div id="googleLoginBtnWrapper" style="display: flex; justify-content: center;"></div>
+
+<div class="app-container">
+    <header>
+        <img src="https://lh3.googleusercontent.com/d/14YQ4fB_3oU9u7yP5mX_yQyvD5_D6zX-7" class="logo-img">
+        <h1>Physique</h1>
+        <p style="opacity:0.7; font-size:0.9rem; margin-top:5px;">Centro de Treinamento e Evolução</p>
+    </header>
+
+    <div id="unauthenticatedView">
+        <div style="text-align:center; padding: 3rem 1rem; background: rgba(255,255,255,0.02); border-radius: 2rem;">
+            <h2 style="color:var(--accent-color); margin-bottom:1rem;">Área do Professor</h2>
+            <p style="margin-bottom:2.5rem; opacity:0.8;">Acesse com sua conta Google para sincronizar os dados da academia.</p>
+            <div id="googleLoginBtnWrapper"></div>
         </div>
     </div>
 
-    <!-- Painel principal autenticado -->
-    <div id="authenticatedView" style="display: none;">
-        <div class="header">
-            <div class="logo-container">
-                <img src="logo.png" alt="Physique Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/80?text=P'">
-                <div class="logo-text">
-                    <h1>Physique</h1>
-                    <p>Controle de presença e acompanhamento</p>
-                </div>
+    <div id="authenticatedView" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2.5rem; background:rgba(255,255,255,0.05); padding:12px 25px; border-radius:60px; border: 1px solid var(--glass-border);">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <img id="userAvatar" src="" style="width:40px; height:40px; border-radius:50%; border: 2px solid var(--accent-color);">
+                <span id="userEmailSpan" style="font-size:0.9rem; font-weight:600;"></span>
             </div>
-            <div class="user-info" id="userProfile">
-                <img id="userAvatar" class="user-avatar" alt="avatar">
-                <span id="userEmailSpan" class="user-email"></span>
-                <button id="logoutBtn" class="btn-logout">Sair</button>
-            </div>
+            <button onclick="location.reload()" style="background:#ff4757; border:none; color:#fff; padding:8px 20px; border-radius:50px; cursor:pointer; font-size:0.8rem; font-weight:bold;">SAIR</button>
         </div>
 
-        <!-- Banner de Alerta Financeiro -->
-        <div id="financialAlert" class="alert-banner" onclick="openFinanceModal()">
-            <span>⚠️ <strong id="unpaidCount">0</strong> alunos com pagamento pendente este mês.</span>
-            <span class="material-symbols-outlined">chevron_right</span>
-        </div>
-
-        <!-- Ações Rápidas -->
         <div class="quick-actions">
+            <button class="btn-payment-special" onclick="openFinanceModal()">
+                <span class="material-symbols-outlined">payments</span>
+                REGISTRAR PAGAMENTOS (NOVO)
+            </button>
             <button class="btn-action" onclick="openModal('modalAttendance')">
-                <span class="material-symbols-outlined">fitness_center</span>
-                Presença
+                <span class="material-symbols-outlined">fitness_center</span>Presença
             </button>
             <button class="btn-action" onclick="openModal('modalNewStudent')">
-                <span class="material-symbols-outlined">person_add</span>
-                Novo Aluno
+                <span class="material-symbols-outlined">person_add</span>Novo Aluno
             </button>
             <button class="btn-action" onclick="openModal('modalObservation')">
-                <span class="material-symbols-outlined">edit_note</span>
-                Notas
+                <span class="material-symbols-outlined">edit_note</span>Notas
             </button>
             <button class="btn-action" onclick="openModal('modalEvaluation')">
-                <span class="material-symbols-outlined">vital_signs</span>
-                Avaliação
-            </button>
-            <button class="btn-action" onclick="openModal('modalFinance')">
-                <span class="material-symbols-outlined">payments</span>
-                Financeiro
+                <span class="material-symbols-outlined">vital_signs</span>Avaliação
             </button>
             <button class="btn-action" onclick="openModal('modalReports')">
-                <span class="material-symbols-outlined">monitoring</span>
-                Relatórios
+                <span class="material-symbols-outlined">monitoring</span>Relatórios
             </button>
         </div>
-
-        <div class="sheet-status" id="sheetStatus">🔄 Conectando à planilha...</div>
+        <div id="sheetStatus">🔄 Conectando...</div>
     </div>
+</div>
 
-    <!-- MODAL: Presença -->
-    <div id="modalAttendance" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Alunos & Presença</h3>
-                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalAttendance')">close</span>
-            </div>
-            <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-                <button id="syncSheetBtn" class="btn-secondary" style="padding: 8px 15px; font-size: 0.8rem;">🔄 Sincronizar</button>
-            </div>
-            <div id="studentsListContainer" class="student-list">
-                <!-- Lista de alunos carregada via JS -->
-            </div>
+<div id="modalAttendance" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+            <h3 style="color:var(--accent-color); font-size:1.5rem;">Presença de Hoje</h3>
+            <span class="material-symbols-outlined" onclick="closeModal('modalAttendance')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
+        <div id="studentsListContainer"></div>
     </div>
+</div>
 
-    <!-- MODAL: Novo Aluno -->
-    <div id="modalNewStudent" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Novo Aluno</h3>
-                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalNewStudent')">close</span>
-            </div>
-            <div class="form-group">
-                <input type="text" id="studentName" placeholder="Nome completo" autocomplete="off">
-                <input type="text" id="studentPhone" placeholder="Telefone (opcional)">
-                <input type="text" id="studentGoal" placeholder="Objetivo (ex: emagrecimento)">
-                <button id="addStudentBtn">➕ Salvar Aluno</button>
-            </div>
+<div id="modalFinance" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+            <h3 style="color:var(--accent-color); font-size:1.5rem;">Pagamentos Mensais</h3>
+            <span class="material-symbols-outlined" onclick="closeModal('modalFinance')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
+        <div id="financeListContainer"></div>
     </div>
+</div>
 
-    <!-- MODAL: Acompanhamento -->
-    <div id="modalObservation" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Notas de Treino</h3>
-                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalObservation')">close</span>
-            </div>
-            <div class="form-group">
-                <select id="studentSelectReport" class="student-select">
-                    <option value="">-- Selecione um aluno --</option>
-                </select>
-                <textarea id="observationText" rows="4" placeholder="Observações do treino de hoje..."></textarea>
-                <button id="addObservationBtn">📝 Salvar Evolução</button>
-                <div id="lastObservations" style="margin-top: 15px; font-size:0.85rem; background:rgba(0,0,0,0.2); border-radius: 15px; padding: 15px;">
-                    <strong>Últimas notas:</strong>
-                    <div id="obsPreview" style="margin-top:10px;">-</div>
-                </div>
-            </div>
+<div id="modalNewStudent" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+            <h3 style="color:var(--accent-color); font-size:1.5rem;">Novo Cadastro</h3>
+            <span class="material-symbols-outlined" onclick="closeModal('modalNewStudent')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
+        <input type="text" id="studentName" placeholder="Nome Completo do Aluno">
+        <input type="text" id="studentPhone" placeholder="WhatsApp">
+        <input type="text" id="studentGoal" placeholder="Objetivo Principal">
+        <button class="primary" onclick="addStudent()">CADASTRAR AGORA</button>
     </div>
+</div>
 
-    <!-- MODAL: Avaliação Física -->
-    <div id="modalEvaluation" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Avaliação Antropométrica</h3>
-                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalEvaluation')">close</span>
-            </div>
-            <div class="form-group" id="evalForm">
-                <select id="studentSelectEval" class="student-select">
-                    <option value="">-- Selecione um aluno --</option>
-                </select>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <input type="number" id="evalPeso" placeholder="Peso (kg)" step="0.1">
-                    <input type="number" id="evalAltura" placeholder="Altura (cm)" step="1">
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <input type="number" id="evalCintura" placeholder="Cintura (cm)">
-                    <input type="number" id="evalQuadril" placeholder="Quadril (cm)">
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <input type="number" id="evalBraco" placeholder="Braço D (cm)">
-                    <input type="number" id="evalCoxa" placeholder="Coxa D (cm)">
-                </div>
-                <textarea id="evalNotas" placeholder="Notas adicionais..."></textarea>
-                <button id="saveEvalBtn">💾 Salvar Avaliação</button>
-            </div>
+<div id="modalObservation" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+            <h3 style="color:var(--accent-color); font-size:1.5rem;">Anotações</h3>
+            <span class="material-symbols-outlined" onclick="closeModal('modalObservation')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
+        <select id="studentSelectObs"></select>
+        <textarea id="observationText" rows="5" placeholder="Evolução ou notas..."></textarea>
+        <button class="primary" onclick="addObservation()">SALVAR NOTA</button>
     </div>
+</div>
 
-    <!-- MODAL: Financeiro -->
-    <div id="modalFinance" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Controle Financeiro</h3>
-                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalFinance')">close</span>
-            </div>
-            <div id="financeList" class="student-list">
-                <!-- Lista de pagamentos -->
-            </div>
+<div id="modalEvaluation" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+            <h3 style="color:var(--accent-color); font-size:1.5rem;">Avaliação Física</h3>
+            <span class="material-symbols-outlined" onclick="closeModal('modalEvaluation')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
+        <select id="studentSelectEval"></select>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+            <input type="number" id="evalPeso" placeholder="Peso (kg)">
+            <input type="number" id="evalAltura" placeholder="Altura (cm)">
+        </div>
+        <button class="primary" onclick="saveEvaluation()">GRAVAR AVALIAÇÃO</button>
     </div>
+</div>
 
-    <!-- MODAL: Relatórios -->
-    <div id="modalReports" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Relatórios e Estatísticas</h3>
-                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalReports')">close</span>
-            </div>
-            <div class="form-group">
-                <p style="color:var(--text-secondary); font-size:0.9rem;">Relatório Individual (Evolução + Presenças)</p>
-                <select id="studentSelectReportPDF" class="student-select">
-                    <option value="">-- Selecione um aluno --</option>
-                </select>
-                <button id="generateReportBtn" style="margin-bottom: 20px;">📄 Gerar PDF Individual</button>
-                
-                <hr style="border:0; border-top:1px solid var(--border-color); margin-bottom:20px;">
-                
-                <p style="color:var(--text-secondary); font-size:0.9rem;">Relatório Geral (Fluxo de Alunos)</p>
-                <button id="generateGeneralReportBtn" class="btn-secondary">📊 Gerar Relatório de Fluxo</button>
-            </div>
+<div id="modalReports" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+            <h3 style="color:var(--accent-color); font-size:1.5rem;">Relatórios</h3>
+            <span class="material-symbols-outlined" onclick="closeModal('modalReports')" style="cursor:pointer; color:#ff4757;">close</span>
         </div>
+        <select id="studentSelectReportPDF"></select>
+        <button class="primary" onclick="generateReport()">GERAR PDF INDIVIDUAL</button>
+        <button class="primary" style="background:#333; color:#fff; margin-top:15px;" onclick="generateGeneralReport()">RELATÓRIO ACADEMIA</button>
     </div>
 </div>
 
 <script>
-    // ---------- CONFIGURAÇÕES GLOBAIS ----------
-    let currentUser = null;         // usuário logado (firebase/google)
-    let accessToken = null;         // token OAuth para Sheets API
-    let spreadsheetId = null;       // ID da planilha do professor
-    let sheetDataCache = { 
-        students: [], 
-        attendances: [], 
-        observations: [], 
-        evaluations: [], 
-        finance: [] 
-    };
-    
-    // Configuração de Tema
-    function initTheme() {
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        if (savedTheme === 'light') {
-            document.body.classList.add('light-theme');
-            updateThemeIcon('light');
-        } else {
-            document.body.classList.remove('light-theme');
-            updateThemeIcon('dark');
-        }
-    }
+    const SHEET_NAMES = { STUDENTS: 'Alunos', ATTENDANCE: 'Presencas', OBSERVATIONS: 'Observacoes', EVALUATIONS: 'Avaliacoes', FINANCE: 'Financeiro' };
+    let accessToken = null, spreadsheetId = null;
+    let sheetDataCache = { students: [], attendances: [], finance: [] };
 
-    function toggleTheme() {
-        const isLight = document.body.classList.toggle('light-theme');
-        const theme = isLight ? 'light' : 'dark';
-        localStorage.setItem('theme', theme);
-        updateThemeIcon(theme);
-    }
-
-    function updateThemeIcon(theme) {
-        const icon = document.querySelector('#themeToggle span');
-        if (icon) icon.innerText = theme === 'light' ? 'light_mode' : 'dark_mode';
-    }
-    
-    // Nomes das abas da planilha
-    const SHEET_NAMES = {
-        STUDENTS: "Alunos",
-        ATTENDANCE: "Presencas",
-        OBSERVATIONS: "Observacoes",
-        EVALUATIONS: "Avaliacoes",
-        FINANCE: "Financeiro"
-    };
-
-    // Google API client carregado
-    let gapiInited = false;
-    let gisInited = false;
-
-    // Elementos DOM
-    const unAuthDiv = document.getElementById('unauthenticatedView');
-    const authDiv = document.getElementById('authenticatedView');
-    const sheetStatusSpan = document.getElementById('sheetStatus');
-    const userAvatar = document.getElementById('userAvatar');
-    const userEmailSpan = document.getElementById('userEmailSpan');
-    const obsPreviewDiv = document.getElementById('obsPreview');
-    
-    // Função para inicializar botão de login Google (One Tap / botão custom)
     function initializeGoogleLogin() {
-        const wrapper = document.getElementById('googleLoginBtnWrapper');
-        wrapper.innerHTML = '';
-        const btn = document.createElement('div');
-        btn.id = 'googleBtn';
-        wrapper.appendChild(btn);
-        
-        window.google.accounts.id.initialize({
-            client_id: '115138407454-st6indfe1snrq3106nquqqmujv17js2t.apps.googleusercontent.com',  // Seu Client ID oficial
-            callback: handleCredentialResponse,
-            auto_select: false,
-            context: 'signin'
+        google.accounts.id.initialize({
+            client_id: '115138407454-st6indfe1snrq3106nquqqmujv17js2t.apps.googleusercontent.com',
+            callback: (res) => { initTokenClient(); }
         });
-        window.google.accounts.id.renderButton(
-            document.getElementById('googleBtn'),
-            { theme: 'outline', size: 'large', text: 'continue_with', shape: 'pill' }
-        );
+        google.accounts.id.renderButton(document.getElementById("googleLoginBtnWrapper"), { theme: "filled_black", size: "large", shape: "pill" });
     }
-    
-    async function handleCredentialResponse(response) {
-        console.log("Credential recebida, iniciando autorização OAuth2...");
-        try {
-            if (!window.tokenClient) {
-                initTokenClient();
-            }
-            
-            if (!window.tokenClient) {
-                throw new Error("Falha ao inicializar o cliente de token do Google.");
-            }
 
-            window.tokenClient.callback = async (resp) => {
-                if (resp.error) {
-                    console.error("Erro OAuth2:", resp);
-                    alert("Erro de autorização Google: " + (resp.error_description || resp.error));
-                    return;
-                }
-                accessToken = resp.access_token;
-                await fetchUserInfo(accessToken);
-            };
-
-            window.tokenClient.requestAccessToken({ prompt: 'consent' });
-        } catch (err) {
-            console.error("Erro no handleCredentialResponse:", err);
-            alert("Erro ao iniciar login: " + err.message);
-        }
-    }
-    
     function initTokenClient() {
         window.tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: '115138407454-st6indfe1snrq3106nquqqmujv17js2t.apps.googleusercontent.com',
-            scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-            callback: (tokenResponse) => {
-                if (tokenResponse.error) {
-                    console.error("Erro token:", tokenResponse);
-                    sheetStatusSpan.innerText = "Falha na autenticação com Google Sheets.";
-                    return;
-                }
-                accessToken = tokenResponse.access_token;
-                fetchUserInfo(accessToken);
-            },
+            scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+            callback: (res) => { accessToken = res.access_token; fetchUserInfo(); }
         });
+        window.tokenClient.requestAccessToken();
     }
-    
-    async function fetchUserInfo(token) {
-        try {
-            const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const userData = await res.json();
-            currentUser = userData;
-            userAvatar.src = userData.picture || 'https://via.placeholder.com/40';
-            userEmailSpan.innerText = userData.email;
-            // Após login, inicializa planilha
-            await initializeOrGetSpreadsheet();
-            showAuthenticatedUI();
-        } catch (err) {
-            console.error(err);
-            sheetStatusSpan.innerText = "Erro ao obter perfil.";
-        }
+
+    async function fetchUserInfo() {
+        const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: `Bearer ${accessToken}` } });
+        const user = await res.json();
+        document.getElementById('userAvatar').src = user.picture;
+        document.getElementById('userEmailSpan').innerText = user.email;
+        document.getElementById('unauthenticatedView').style.display = 'none';
+        document.getElementById('authenticatedView').style.display = 'block';
+        await initSpreadsheet();
     }
-    
-    async function initializeOrGetSpreadsheet() {
+
+    async function initSpreadsheet() {
+        const status = document.getElementById('sheetStatus');
+        status.innerText = "🔍 Localizando base de dados...";
         try {
-            sheetStatusSpan.innerText = "📁 Sincronizando com Drive...";
-            const fileName = "FitManager_Physique";
-            
-            const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false&fields=files(id, name)`, {
-                headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            const searchData = await searchRes.json();
-            
-            if (searchData.files && searchData.files.length > 0) {
-                spreadsheetId = searchData.files[0].id;
-                console.log("Planilha encontrada:", spreadsheetId);
+            const search = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='FitManager_Physique' and trashed=false`, { headers: { Authorization: `Bearer ${accessToken}` } });
+            const data = await search.json();
+            if (data.files && data.files.length > 0) {
+                spreadsheetId = data.files[0].id;
             } else {
-                console.log("Criando nova planilha...");
-                const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+                status.innerText = "🆕 Criando estrutura...";
+                const create = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        properties: { title: fileName },
-                        sheets: Object.values(SHEET_NAMES).map(title => ({ properties: { title } }))
-                    })
+                    body: JSON.stringify({ properties: { title: 'FitManager_Physique' }, sheets: Object.values(SHEET_NAMES).map(t => ({ properties: { title: t } })) })
                 });
-                const newSheet = await createRes.json();
-                spreadsheetId = newSheet.spreadsheetId;
-                await initSheetHeaders();
+                const res = await create.json();
+                spreadsheetId = res.spreadsheetId;
+                await setupHeaders();
             }
-            
-            await ensureSheetsExist();
-            sheetStatusSpan.innerText = "✅ Conectado!";
-            await loadAllDataFromSheet();
-        } catch (error) {
-            console.error("Erro na inicialização:", error);
-            sheetStatusSpan.innerHTML = '❌ Erro de Sincronização. <button onclick="location.reload()" style="padding:5px; border-radius:5px; cursor:pointer;">Tentar Novamente</button>';
+            await loadData();
+        } catch (e) { status.innerText = "❌ Falha ao conectar."; }
+    }
+
+    async function setupHeaders() {
+        const h = { [SHEET_NAMES.STUDENTS]:['ID','Nome','WhatsApp','Objetivo','Data'], [SHEET_NAMES.ATTENDANCE]:['ID','AID','Data','Hora','Status'], [SHEET_NAMES.FINANCE]:['ID','AID','Data','Valor','Mes'] };
+        for (const [n, v] of Object.entries(h)) {
+            await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${n}!A1:E1?valueInputOption=RAW`, { method: 'PUT', headers: { Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ values: [v] }) });
         }
     }
-    
-    async function ensureSheetsExist() {
-        const getSpreadsheet = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
-            headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        const sheetMeta = await getSpreadsheet.json();
-        const existingTitles = sheetMeta.sheets.map(s => s.properties.title);
-        for (let title of Object.values(SHEET_NAMES)) {
-            if (!existingTitles.includes(title)) {
-                await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ requests: [{ addSheet: { properties: { title } } }] })
-                });
-            }
-        }
-        await initSheetHeaders();
-    }
-    
-    async function initSheetHeaders() {
-        await updateSheetRange(SHEET_NAMES.STUDENTS, 'A1:E1', [['ID','Nome','Telefone','Objetivo','DataCadastro']]);
-        await updateSheetRange(SHEET_NAMES.ATTENDANCE, 'A1:E1', [['ID','AlunoID','Data','Horario','Status']]);
-        await updateSheetRange(SHEET_NAMES.OBSERVATIONS, 'A1:D1', [['ID','AlunoID','DataHora','Observacao']]);
-        await updateSheetRange(SHEET_NAMES.EVALUATIONS, 'A1:K1', [['ID','AlunoID','Data','Peso','Altura','IMC','Cintura','Quadril','BracoD','CoxaD','Notas']]);
-        await updateSheetRange(SHEET_NAMES.FINANCE, 'A1:E1', [['ID','AlunoID','Data','Valor','MesReferencia']]);
-    }
-    
-    async function updateSheetRange(sheetName, range, values) {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}!${range}?valueInputOption=RAW`;
-        await fetch(url, {
-            method: 'PUT',
-            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ values })
-        });
-    }
-    
-    async function appendRow(sheetName, rowValues) {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}!A:Z:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+
+    async function loadData() {
+        const status = document.getElementById('sheetStatus');
+        status.innerText = "📥 Atualizando informações...";
         try {
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ values: [rowValues] })
-            });
-            if (!res.ok) throw new Error("Falha ao gravar dados.");
-            return res.json();
-        } catch (error) {
-            console.error(error);
-            alert("Erro ao salvar dados na planilha. Verifique sua conexão.");
-        }
-    }
-    
-    async function readSheet(sheetName) {
-        const range = `${sheetName}!A2:Z`;
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`;
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-        const data = await res.json();
-        return data.values || [];
-    }
-    
-    async function loadAllDataFromSheet() {
-        if (!spreadsheetId) return;
-        sheetStatusSpan.innerText = "📥 Carregando dados...";
-        try {
-            // Carregamento sequencial para evitar falhas em massa
-            const alunosRows = await readSheet(SHEET_NAMES.STUDENTS).catch(() => []);
-            const presencasRows = await readSheet(SHEET_NAMES.ATTENDANCE).catch(() => []);
-            const obsRows = await readSheet(SHEET_NAMES.OBSERVATIONS).catch(() => []);
-            const evalRows = await readSheet(SHEET_NAMES.EVALUATIONS).catch(() => []);
-            const financeRows = await readSheet(SHEET_NAMES.FINANCE).catch(() => []);
+            const read = async (n) => {
+                const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${n}!A2:Z`, { headers: { Authorization: `Bearer ${accessToken}` } });
+                const d = await r.json(); return d.values || [];
+            };
+            const [s, a, f] = await Promise.all([read(SHEET_NAMES.STUDENTS), read(SHEET_NAMES.ATTENDANCE), read(SHEET_NAMES.FINANCE)]);
+            
+            sheetDataCache.students = s.filter(r => r[0] && String(r[0]).startsWith('s_')).map(r => ({ id: r[0], nome: r[1] }));
+            sheetDataCache.attendances = a.filter(r => r[0] && String(r[0]).startsWith('p_')).map(r => ({ aid: r[1], data: r[2], hora: r[3] }));
+            sheetDataCache.finance = f.filter(r => r[0] && String(r[0]).startsWith('f_')).map(r => ({ aid: r[1], mes: r[4] }));
 
-            sheetDataCache.students = (alunosRows || []).filter(r => r[0] && String(r[0]).startsWith('s_')).map(r => ({
-                id: String(r[0]), nome: r[1]||'', telefone: r[2]||'', objetivo: r[3]||'', dataCad: r[4]||''
-            }));
-            
-            sheetDataCache.attendances = (presencasRows || []).filter(r => r[0] && String(r[0]).startsWith('p_')).map(r => ({
-                id: r[0], alunoId: String(r[1]), data: r[2], horario: r[3], status: r[4]
-            }));
-            
-            sheetDataCache.observations = (obsRows || []).filter(r => r[0] && String(r[0]).startsWith('o_')).map(r => ({
-                id: r[0], alunoId: String(r[1]), dataHora: r[2], observacao: r[3]
-            }));
-            
-            sheetDataCache.evaluations = (evalRows || []).filter(r => r[0] && String(r[0]).startsWith('ev_')).map(r => ({
-                id: r[0], alunoId: String(r[1]), data: r[2], peso: r[3], altura: r[4], imc: r[5], notas: r[10]
-            }));
-            
-            sheetDataCache.finance = (financeRows || []).filter(r => r[0] && String(r[0]).startsWith('f_')).map(r => ({
-                id: r[0], alunoId: String(r[1]), data: r[2], valor: r[3], mesRef: r[4]
-            }));
-
-            renderStudentsList();
-            updateStudentSelects();
-            checkFinancialStatus();
-            sheetStatusSpan.innerText = `📊 Online (${sheetDataCache.students.length} alunos)`;
-        } catch (e) {
-            console.error("Erro fatal no carregamento:", e);
-            sheetStatusSpan.innerText = "❌ Falha crítica ao ler planilha.";
-        }
+            renderAttendanceList();
+            updateSelects();
+            status.innerText = `📊 Online (${sheetDataCache.students.length} alunos)`;
+        } catch (e) { status.innerText = "❌ Erro ao ler dados."; }
     }
 
-    function checkFinancialStatus() {
-        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-        let unpaidCount = 0;
-        const today = new Date().getDate();
-        
-        sheetDataCache.students.forEach(aluno => {
-            const pagoEsteMes = sheetDataCache.finance.some(f => f.alunoId == aluno.id && f.mesRef === currentMonth);
-            const card = document.querySelector(`.student-item[data-id="${aluno.id}"]`);
-            if (card) {
-                card.classList.remove('paid', 'unpaid');
-                card.classList.add(pagoEsteMes ? 'paid' : 'unpaid');
-            }
-            if (!pagoEsteMes) unpaidCount++;
-        });
-
-        // Alerta final de mês (após dia 20)
-        const alertBanner = document.getElementById('financialAlert');
-        if (today >= 20 && unpaidCount > 0) {
-            alertBanner.style.display = 'flex';
-            document.getElementById('unpaidCount').innerText = unpaidCount;
-        } else {
-            alertBanner.style.display = 'none';
-        }
-    }
-
-    function renderStudentsList() {
-        const container = document.getElementById('studentsListContainer');
-        if (!container) return;
-        
-        if (!sheetDataCache.students.length) {
-            container.innerHTML = '<div style="padding:20px; text-align:center;">Nenhum aluno cadastrado.</div>';
-            return;
-        }
+    function renderAttendanceList() {
+        const cont = document.getElementById('studentsListContainer');
         const today = new Date().toISOString().slice(0,10);
-        container.innerHTML = sheetDataCache.students.map(aluno => {
-            const presencasHoje = sheetDataCache.attendances.filter(a => a.alunoId == aluno.id && a.data === today);
-            const ultPagamento = sheetDataCache.finance.filter(f => f.alunoId == aluno.id).sort((a,b) => new Date(b.data) - new Date(a.data))[0];
-            const currentMonth = new Date().toISOString().slice(0, 7);
-            const isPago = sheetDataCache.finance.some(f => f.alunoId == aluno.id && f.mesRef === currentMonth);
-
-            return `
-                <div class="student-item ${isPago ? 'paid' : 'unpaid'}" data-id="${aluno.id}">
-                    <div style="flex: 1;">
-                        <strong class="student-name">${escapeHtml(aluno.nome)}</strong>
-                        <div class="finance-status ${isPago ? 'status-paid' : 'status-unpaid'}">
-                            ${isPago ? '🟢 Pago' : '🔴 Pendente'} • Úitimo: ${ultPagamento ? new Date(ultPagamento.data).toLocaleDateString() : 'Nenhum'}
-                        </div>
-                    </div>
-                    <div class="presence-options">
-                        ${renderPresenceButtons(aluno.id, presencasHoje)}
-                    </div>
+        cont.innerHTML = sheetDataCache.students.map(s => {
+            const pres = sheetDataCache.attendances.filter(p => p.aid == s.id && p.data == today);
+            return `<div class="student-item">
+                <strong style="font-size:1.1rem;">${escapeHtml(s.nome)}</strong>
+                <div style="display:flex; gap:8px;">
+                    ${['17h','19h','Extra'].map(h => {
+                        const ok = pres.some(p => p.hora == h);
+                        return ok ? `<span style="color:#2ed573; font-weight:bold;">✅${h}</span>` : `<button onclick="markPres('${s.id}','${h}')" style="background:#333; color:#fff; border:none; padding:8px 12px; border-radius:10px; cursor:pointer;">${h}</button>`;
+                    }).join('')}
                 </div>
-            `;
+            </div>`;
         }).join('');
     }
 
-    function renderPresenceButtons(alunoId, presencasHoje) {
-        const horarios = ['17h', '19h', 'Extra'];
-        return horarios.map(h => {
-            const jaMarcado = presencasHoje.some(p => p.horario === h);
-            return jaMarcado 
-                ? `<span class="presence-badge" style="font-size:0.65rem; padding:4px 8px;">✅ ${h}</span>`
-                : `<button class="btn-time" onclick="marcarPresenca('${alunoId}', '${h}')">${h}</button>`;
+    async function markPres(id, h) {
+        await appendRow(SHEET_NAMES.ATTENDANCE, [`p_${Date.now()}`, id, new Date().toISOString().slice(0,10), h, 'Presente']);
+        await loadData();
+    }
+
+    function openFinanceModal() {
+        const cont = document.getElementById('financeListContainer');
+        const month = new Date().toISOString().slice(0, 7);
+        let p = 0, n = 0;
+        const html = sheetDataCache.students.map(s => {
+            const ok = sheetDataCache.finance.some(f => f.aid == s.id && f.mes == month);
+            if (ok) p++; else n++;
+            return `<div class="student-item ${ok?'paid':'unpaid'}">
+                <div><strong>${escapeHtml(s.nome)}</strong><br><small>${ok?'✅ MENSALIDADE PAGA':'🔴 AGUARDANDO PAGAMENTO'}</small></div>
+                ${!ok?`<button onclick="pay('${s.id}')" style="background:var(--accent-color); color:#000; border:none; padding:10px 18px; border-radius:12px; font-weight:bold; cursor:pointer;">💰 PAGAR</button>`:''}
+            </div>`;
         }).join('');
+        cont.innerHTML = `<div style="display:flex; justify-content:space-around; margin-bottom:2rem; background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; text-align:center;">
+            <div><div style="color:#2ed573; font-size:1.5rem; font-weight:bold;">${p}</div><small>Pagos</small></div>
+            <div><div style="color:#ff4757; font-size:1.5rem; font-weight:bold;">${n}</div><small>Pendentes</small></div>
+            <div><div style="color:var(--accent-color); font-size:1.5rem; font-weight:bold;">${sheetDataCache.students.length}</div><small>Alunos</small></div>
+        </div>` + html;
+        openModal('modalFinance');
+    }
+
+    async function pay(id) {
+        if (!confirm("Registrar pagamento?")) return;
+        await appendRow(SHEET_NAMES.FINANCE, [`f_${Date.now()}`, id, new Date().toISOString().slice(0,10), 'R$ 0,00', new Date().toISOString().slice(0,7)]);
+        await loadData();
+        openFinanceModal();
+    }
+
+    async function appendRow(name, row) {
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${name}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [row] }) });
+    }
+
+    function updateSelects() {
+        ['studentSelectObs', 'studentSelectEval', 'studentSelectReportPDF'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.innerHTML = '<option value="">-- Selecione o Aluno --</option>' + sheetDataCache.students.map(s => `<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join('');
+        });
+    }
+
+    async function addStudent() {
+        const n = document.getElementById('studentName').value;
+        if (!n) return alert("Preencha o nome!");
+        await appendRow(SHEET_NAMES.STUDENTS, [`s_${Date.now()}`, n, document.getElementById('studentPhone').value, document.getElementById('studentGoal').value, new Date().toISOString()]);
+        document.getElementById('studentName').value = '';
+        closeModal('modalNewStudent');
+        await loadData();
+    }
+
+    async function addObservation() {
+        const id = document.getElementById('studentSelectObs').value;
+        const txt = document.getElementById('observationText').value;
+        if (!id || !txt) return alert("Preencha tudo!");
+        await appendRow(SHEET_NAMES.OBSERVATIONS, [`o_${Date.now()}`, id, new Date().toISOString(), txt]);
+        document.getElementById('observationText').value = '';
+        closeModal('modalObservation');
+        await loadData();
+    }
+
+    async function saveEvaluation() {
+        const id = document.getElementById('studentSelectEval').value;
+        const p = document.getElementById('evalPeso').value;
+        const a = document.getElementById('evalAltura').value;
+        if (!id || !p || !a) return alert("Preencha tudo!");
+        const imc = (p / ((a/100)*(a/100))).toFixed(1);
+        await appendRow(SHEET_NAMES.EVALUATIONS, [`ev_${Date.now()}`, id, new Date().toISOString().slice(0,10), p, a, imc]);
+        closeModal('modalEvaluation');
+        await loadData();
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    
-    async function marcarPresenca(alunoId, horario) {
-        const today = new Date().toISOString().slice(0,10);
-        const newId = `p_${Date.now()}`;
-        sheetStatusSpan.innerText = `⏳ Gravando presença (${horario})...`;
-        await appendRow(SHEET_NAMES.ATTENDANCE, [newId, alunoId, today, horario, 'Presente']);
-        await loadAllDataFromSheet();
-    }
+    function escapeHtml(str) { return str ? str.replace(/[&<>]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[t] || t)) : ''; }
+    window.onload = initializeGoogleLogin;
 
-    function updateStudentSelects() {
-        const selects = ['studentSelectReport', 'studentSelectEval', 'studentSelectReportPDF'];
-        selects.forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.innerHTML = '<option value="">-- Selecione um aluno --</option>' + 
-                sheetDataCache.students.map(a => `<option value="${a.id}">${escapeHtml(a.nome)}</option>`).join('');
-        });
-    }
-
-    function openFinanceModal() {
-        const container = document.getElementById('financeList');
-        if (!container) {
-            alert("Erro interno: Container de lista não encontrado.");
-            return;
-        }
-
-        // Limpa e mostra "Carregando"
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Carregando lista financeira...</div>';
-        openModal('modalFinance');
-
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        let paidCount = 0;
-        let pendingCount = 0;
-        
-        if (!sheetDataCache.students || sheetDataCache.students.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px;">Nenhum aluno encontrado para cobrança.</div>';
-            return;
-        }
-
-        const listHtml = sheetDataCache.students.map(aluno => {
-            const isPago = sheetDataCache.finance.some(f => f.alunoId == aluno.id && f.mesRef === currentMonth);
-            if (isPago) paidCount++; else pendingCount++;
-            
-            return `
-                <div class="student-item ${isPago ? 'paid' : 'unpaid'}" style="margin: 8px 0; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); border-radius: 15px;">
-                    <div style="flex:1;">
-                        <strong style="font-size:1rem; color: #fff;">${escapeHtml(aluno.nome)}</strong><br>
-                        <small style="color: ${isPago ? '#2ed573' : '#ff4757'}; font-weight: bold;">
-                            ${isPago ? '✅ PAGO' : '❌ PENDENTE'}
-                        </small>
-                    </div>
-                    ${!isPago ? `
-                        <button onclick="registrarPagamento('${aluno.id}')" 
-                                style="background: var(--accent-color); color: #000; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: var(--neon-glow);">
-                            💰 PAGAR
-                        </button>` : ''}
-                </div>
-            `;
-        }).join('');
-
-        const summaryHtml = `
-            <div style="background: rgba(254, 235, 26, 0.1); padding: 15px; border-radius: 20px; margin-bottom: 25px; display: flex; justify-content: space-around; border: 1px solid var(--border-color);">
-                <div style="text-align:center;"><div style="color:#2ed573; font-size:1.4rem; font-weight:bold;">${paidCount}</div><div style="font-size:0.7rem; opacity:0.8;">PAGOS</div></div>
-                <div style="text-align:center;"><div style="color:#ff4757; font-size:1.4rem; font-weight:bold;">${pendingCount}</div><div style="font-size:0.7rem; opacity:0.8;">PENDENTES</div></div>
-                <div style="text-align:center;"><div style="color:var(--accent-color); font-size:1.4rem; font-weight:bold;">${sheetDataCache.students.length}</div><div style="font-size:0.7rem; opacity:0.8;">TOTAL</div></div>
-            </div>
-        `;
-        
-        container.innerHTML = summaryHtml + listHtml;
-    }
-
-    async function registrarPagamento(alunoId) {
-        const today = new Date().toISOString().slice(0,10);
-        const currentMonth = today.slice(0, 7);
-        const newId = `f_${Date.now()}`;
-        if (!confirm("Confirmar recebimento de mensalidade?")) return;
-        await appendRow(SHEET_NAMES.FINANCE, [newId, alunoId, today, "R$ 0,00", currentMonth]);
-        await loadAllDataFromSheet();
-        openFinanceModal(); // Atualiza lista
-    }
-
-    async function saveEvaluation() {
-        const alunoId = document.getElementById('studentSelectEval').value;
-        if (!alunoId) return alert("Selecione um aluno.");
-        const peso = document.getElementById('evalPeso').value;
-        const altura = document.getElementById('evalAltura').value;
-        const imc = (peso / ((altura/100) * (altura/100))).toFixed(1);
-        const row = [
-            `ev_${Date.now()}`, alunoId, new Date().toISOString().slice(0,10),
-            peso, altura, imc,
-            document.getElementById('evalCintura').value,
-            document.getElementById('evalQuadril').value,
-            document.getElementById('evalBraco').value,
-            document.getElementById('evalCoxa').value,
-            document.getElementById('evalNotas').value
-        ];
-        await appendRow(SHEET_NAMES.EVALUATIONS, row);
-        alert("Avaliação física salva com sucesso!");
-        closeModal('modalEvaluation');
-        await loadAllDataFromSheet();
-    }
-    
-    function showObservationsPreview(alunoId) {
-        const obsAluno = sheetDataCache.observations.filter(o => o.alunoId == alunoId).slice(-3);
-        if (obsAluno.length === 0) obsPreviewDiv.innerText = 'Sem observações registradas.';
-        else obsPreviewDiv.innerHTML = obsAluno.map(o => `📌 ${new Date(o.dataHora).toLocaleString()}: ${escapeHtml(o.observacao.substring(0,60))}`).join('<br>');
-    }
-    
-    async function addStudent() {
-        const nome = document.getElementById('studentName').value.trim();
-        if (!nome) return alert("Nome é obrigatório");
-        const telefone = document.getElementById('studentPhone').value;
-        const objetivo = document.getElementById('studentGoal').value;
-        const id = `s_${Date.now()}_${Math.random()}`;
-        const dataCad = new Date().toISOString();
-        await appendRow(SHEET_NAMES.STUDENTS, [id, nome, telefone, objetivo, dataCad]);
-        document.getElementById('studentName').value = '';
-        document.getElementById('studentPhone').value = '';
-        document.getElementById('studentGoal').value = '';
-        await loadAllDataFromSheet();
-    }
-    
-    async function addObservation() {
-        const alunoId = studentSelectReport.value;
-        if (!alunoId) return alert("Selecione um aluno primeiro.");
-        const texto = document.getElementById('observationText').value.trim();
-        if (!texto) return alert("Digite uma observação.");
-        const obsId = `obs_${Date.now()}`;
-        await appendRow(SHEET_NAMES.OBSERVATIONS, [obsId, alunoId, new Date().toISOString(), texto]);
-        document.getElementById('observationText').value = '';
-        await loadAllDataFromSheet();
-        alert("Observação salva com sucesso!");
-        if (studentSelectReport.value === alunoId) showObservationsPreview(alunoId);
-    }
-    
-    async function generateReport() {
-        const alunoId = document.getElementById('studentSelectReportPDF').value;
-        if (!alunoId) return alert("Selecione um aluno para gerar relatório.");
-        const aluno = sheetDataCache.students.find(a => String(a.id) === String(alunoId));
-        if (!aluno) return alert("Aluno não encontrado no banco de dados.");
-
-        const presencas = sheetDataCache.attendances.filter(a => String(a.alunoId) === String(alunoId)).sort((a,b) => new Date(b.data) - new Date(a.data));
-        const evals = sheetDataCache.evaluations.filter(e => String(e.alunoId) === String(alunoId)).sort((a,b) => new Date(b.data) - new Date(a.data));
-        const finance = sheetDataCache.finance.filter(f => String(f.alunoId) === String(alunoId)).sort((a,b) => new Date(b.data) - new Date(a.data));
-        
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        
-        // Cabeçalho
-        doc.setFillColor(30, 30, 30);
-        doc.rect(0, 0, 210, 40, 'F');
-        doc.setFontSize(22); doc.setTextColor(254, 235, 26);
-        doc.text("PHYSIQUE - RELATÓRIO DO ALUNO", 105, 25, { align: 'center' });
-        
-        doc.setFontSize(12); doc.setTextColor(0, 0, 0);
-        doc.text(`Nome: ${aluno.nome}`, 20, 50);
-        doc.text(`Cadastrado em: ${aluno.dataCad || 'N/A'}`, 20, 57);
-        doc.text(`Objetivo: ${aluno.objetivo || 'Não definido'}`, 20, 64);
-        
-        // Status Financeiro
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        const pagoEsteMes = finance.some(f => f.mesRef === currentMonth);
-        doc.setFont("helvetica", "bold");
-        doc.text(`Status de Pagamento: ${pagoEsteMes ? 'PAGO' : 'PENDENTE'}`, 130, 50);
-        doc.setFont("helvetica", "normal");
-
-        // Evolução Física
-        doc.setFontSize(14); doc.setTextColor(0, 100, 0);
-        doc.text("Resumo de Evolução Física:", 20, 80);
-        doc.setDrawColor(200, 200, 200); doc.line(20, 82, 190, 82);
-        
-        let y = 90;
-        if (evals.length > 0) {
-            const e = evals[0];
-            doc.setFontSize(10); doc.setTextColor(0, 0, 0);
-            doc.text(`Última Avaliação (${e.data}):`, 25, y);
-            y += 6;
-            doc.text(`Peso: ${e.peso}kg | IMC: ${e.imc} | Altura: ${e.altura}cm`, 30, y);
-            y += 10;
-        } else {
-            doc.setFontSize(10); doc.text("Nenhuma avaliação física registrada.", 25, y);
-            y += 10;
-        }
-
-        // Histórico de Presenças
-        doc.setFontSize(14); doc.setTextColor(0, 0, 150);
-        doc.text("Histórico de Presenças (Últimas 30):", 20, y + 5);
-        doc.line(20, y + 7, 190, y + 7);
-        y += 15;
-
-        presencas.slice(0, 30).forEach((p, idx) => {
-            doc.setFontSize(9); doc.setTextColor(50, 50, 50);
-            doc.text(`${p.data} - ${p.horario} (${p.status})`, 25, y);
-            y += 6;
-            if (y > 275) { doc.addPage(); y = 20; }
-        });
-        
-        doc.save(`relatorio_${aluno.nome.replace(/\s/g, '_')}.pdf`);
-    }
-
-    async function generateGeneralReport() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
-        
-        const presencasMes = sheetDataCache.attendances.filter(p => p.data >= startOfMonth);
-        const financeMes = sheetDataCache.finance.filter(f => f.mesRef === now.toISOString().slice(0, 7));
-        const totalAlunos = sheetDataCache.students.length;
-        
-        const stats = { '17h': 0, '19h': 0, 'Extra': 0 };
-        presencasMes.forEach(p => { if(stats[p.horario] !== undefined) stats[p.horario]++; });
-
-        // Título
-        doc.setFontSize(22); doc.text("PHYSIQUE - RELATÓRIO GERAL MENSAL", 105, 25, { align: 'center' });
-        doc.setFontSize(12); doc.text(`${now.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}`, 105, 32, { align: 'center' });
-        
-        // Estatísticas de Ocupação
-        doc.setFontSize(16); doc.text("Fluxo de Alunos:", 20, 50);
-        doc.setFontSize(12);
-        doc.text(`- Total de Alunos Ativos: ${totalAlunos}`, 25, 60);
-        doc.text(`- Média de presenças/mês: ${(presencasMes.length / (totalAlunos||1)).toFixed(1)}`, 25, 67);
-        
-        doc.text("Ocupação por Horário:", 20, 80);
-        doc.text(`[17h]  ${stats['17h']} presenças`, 30, 90);
-        doc.text(`[19h]  ${stats['19h']} presenças`, 30, 97);
-        doc.text(`[Extra] ${stats['Extra']} presenças`, 30, 104);
-
-        // Financeiro
-        doc.text("Resumo Financeiro:", 20, 120);
-        doc.text(`- Recebimentos confirmados: ${financeMes.length}`, 30, 130);
-        doc.text(`- Pagamentos pendentes: ${totalAlunos - financeMes.length}`, 30, 137);
-        
-        doc.save(`relatorio_geral_${now.getMonth()+1}.pdf`);
-    }
-    
-    function showAuthenticatedUI() {
-        unAuthDiv.style.display = 'none';
-        authDiv.style.display = 'block';
-    }
-    
-    function logout() {
-        currentUser = null;
-        accessToken = null;
-        spreadsheetId = null;
-        unAuthDiv.style.display = 'block';
-        authDiv.style.display = 'none';
-        if (window.tokenClient) window.tokenClient = null;
-        window.google?.accounts.id?.disableAutoSelect?.();
-        initializeGoogleLogin();
-    }
-    
-    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-    
-    // eventos e inicialização
-    window.onload = () => {
-        initTheme();
-        initializeGoogleLogin();
-        initTokenClient();
-        
-        document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
-        document.getElementById('addStudentBtn')?.addEventListener('click', addStudent);
-        document.getElementById('addObservationBtn')?.addEventListener('click', addObservation);
-        document.getElementById('saveEvalBtn')?.addEventListener('click', saveEvaluation);
-        document.getElementById('generateReportBtn')?.addEventListener('click', generateReport);
-        document.getElementById('generateGeneralReportBtn')?.addEventListener('click', generateGeneralReport);
-        document.getElementById('syncSheetBtn')?.addEventListener('click', loadAllDataFromSheet);
-        document.getElementById('logoutBtn')?.addEventListener('click', logout);
-        
-        document.getElementById('studentSelectReport')?.addEventListener('change', (e) => showObservationsPreview(e.target.value));
-    };
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, function(tag) {
-            const chars = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
-            return chars[tag] || tag;
-        });
-    }
+    async function generateReport() { alert("Manutenção."); }
+    async function generateGeneralReport() { alert("Manutenção."); }
 </script>
 </body>
 </html>
