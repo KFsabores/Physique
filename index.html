@@ -693,8 +693,6 @@
     // Elementos DOM
     const unAuthDiv = document.getElementById('unauthenticatedView');
     const authDiv = document.getElementById('authenticatedView');
-    const studentsListDiv = document.getElementById('studentsListContainer');
-    const studentSelectReport = document.getElementById('studentSelectReport');
     const sheetStatusSpan = document.getElementById('sheetStatus');
     const userAvatar = document.getElementById('userAvatar');
     const userEmailSpan = document.getElementById('userEmailSpan');
@@ -906,9 +904,9 @@
         sheetStatusSpan.innerText = "📥 Carregando dados...";
         try {
             const alunosRows = await readSheet(SHEET_NAMES.STUDENTS);
-            // Pula a primeira linha (cabeçalho) se houver dados
-            const alunosData = alunosRows.length > 1 ? alunosRows.slice(1) : [];
-            sheetDataCache.students = alunosData.map((row, idx) => ({ 
+            // Pula cabeçalho: Filtra apenas linhas que tenham o ID começando com 's_'
+            const alunosData = alunosRows.filter(row => row[0] && String(row[0]).startsWith('s_'));
+            sheetDataCache.students = alunosData.map(row => ({ 
                 id: String(row[0]), 
                 nome: row[1]||'', 
                 telefone: row[2]||'', 
@@ -917,25 +915,25 @@
             }));
             
             const presencasRows = await readSheet(SHEET_NAMES.ATTENDANCE);
-            const presencasData = presencasRows.length > 1 ? presencasRows.slice(1) : [];
+            const presencasData = presencasRows.filter(row => row[0] && String(row[0]).startsWith('p_'));
             sheetDataCache.attendances = presencasData.map(r => ({ 
                 id: r[0], alunoId: String(r[1]), data: r[2], horario: r[3], status: r[4] 
             }));
             
             const obsRows = await readSheet(SHEET_NAMES.OBSERVATIONS);
-            const obsData = obsRows.length > 1 ? obsRows.slice(1) : [];
+            const obsData = obsRows.filter(row => row[0] && String(row[0]).startsWith('o_'));
             sheetDataCache.observations = obsData.map(r => ({ 
                 id: r[0], alunoId: String(r[1]), dataHora: r[2], observacao: r[3] 
             }));
             
             const evalRows = await readSheet(SHEET_NAMES.EVALUATIONS);
-            const evalData = evalRows.length > 1 ? evalRows.slice(1) : [];
+            const evalData = evalRows.filter(row => row[0] && String(row[0]).startsWith('ev_'));
             sheetDataCache.evaluations = evalData.map(r => ({ 
                 id: r[0], alunoId: String(r[1]), data: r[2], peso: r[3], altura: r[4], imc: r[5], notas: r[10] 
             }));
             
             const financeRows = await readSheet(SHEET_NAMES.FINANCE);
-            const financeData = financeRows.length > 1 ? financeRows.slice(1) : [];
+            const financeData = financeRows.filter(row => row[0] && String(row[0]).startsWith('f_'));
             sheetDataCache.finance = financeData.map(r => ({ 
                 id: r[0], alunoId: String(r[1]), data: r[2], valor: r[3], mesRef: r[4] 
             }));
@@ -976,8 +974,11 @@
     }
 
     function renderStudentsList() {
+        const container = document.getElementById('studentsListContainer');
+        if (!container) return;
+        
         if (!sheetDataCache.students.length) {
-            studentsListDiv.innerHTML = '<div style="padding:20px; text-align:center;">Nenhum aluno cadastrado.</div>';
+            container.innerHTML = '<div style="padding:20px; text-align:center;">Nenhum aluno cadastrado.</div>';
             return;
         }
         const today = new Date().toISOString().slice(0,10);
