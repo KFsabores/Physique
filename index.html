@@ -493,17 +493,21 @@
 
         <!-- Ações Rápidas -->
         <div class="quick-actions">
+            <button class="btn-action" onclick="openModal('modalAttendance')">
+                <span class="material-symbols-outlined">fitness_center</span>
+                Presença
+            </button>
             <button class="btn-action" onclick="openModal('modalNewStudent')">
                 <span class="material-symbols-outlined">person_add</span>
                 Novo Aluno
             </button>
             <button class="btn-action" onclick="openModal('modalObservation')">
                 <span class="material-symbols-outlined">edit_note</span>
-                Acompanhamento
+                Notas
             </button>
             <button class="btn-action" onclick="openModal('modalEvaluation')">
                 <span class="material-symbols-outlined">vital_signs</span>
-                Avaliação Física
+                Avaliação
             </button>
             <button class="btn-action" onclick="openModal('modalFinance')">
                 <span class="material-symbols-outlined">payments</span>
@@ -516,15 +520,20 @@
         </div>
 
         <div class="sheet-status" id="sheetStatus">🔄 Conectando à planilha...</div>
-        
-        <!-- View Principal: Lista de Alunos -->
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h3><span class="material-symbols-outlined">fitness_center</span> Alunos & Presença</h3>
+    </div>
+
+    <!-- MODAL: Presença -->
+    <div id="modalAttendance" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Alunos & Presença</h3>
+                <span class="material-symbols-outlined" style="cursor:pointer" onclick="closeModal('modalAttendance')">close</span>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
                 <button id="syncSheetBtn" class="btn-secondary" style="padding: 8px 15px; font-size: 0.8rem;">🔄 Sincronizar</button>
             </div>
             <div id="studentsListContainer" class="student-list">
-                <div style="text-align:center; padding:20px;">Carregando alunos...</div>
+                <!-- Lista de alunos carregada via JS -->
             </div>
         </div>
     </div>
@@ -1127,34 +1136,58 @@
         const aluno = sheetDataCache.students.find(a => a.id == alunoId);
         const presencas = sheetDataCache.attendances.filter(a => a.alunoId == alunoId).sort((a,b) => new Date(b.data) - new Date(a.data));
         const evals = sheetDataCache.evaluations.filter(e => e.alunoId == alunoId).sort((a,b) => new Date(b.data) - new Date(a.data));
+        const finance = sheetDataCache.finance.filter(f => f.alunoId == alunoId).sort((a,b) => new Date(b.data) - new Date(a.data));
         
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.setFontSize(20); doc.setTextColor(0, 100, 0);
-        doc.text("PHYSIQUE - RELATÓRIO INDIVIDUAL", 20, 20);
+        
+        // Cabeçalho
+        doc.setFillColor(30, 30, 30);
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setFontSize(22); doc.setTextColor(254, 235, 26);
+        doc.text("PHYSIQUE - RELATÓRIO DO ALUNO", 105, 25, { align: 'center' });
         
         doc.setFontSize(12); doc.setTextColor(0, 0, 0);
-        doc.text(`Aluno: ${aluno.nome}`, 20, 35);
-        doc.text(`Objetivo: ${aluno.objetivo || 'Não definido'}`, 20, 42);
+        doc.text(`Nome: ${aluno.nome}`, 20, 50);
+        doc.text(`Cadastrado em: ${aluno.dataCad || 'N/A'}`, 20, 57);
+        doc.text(`Objetivo: ${aluno.objetivo || 'Não definido'}`, 20, 64);
         
-        // Histórico de Avaliações
-        doc.setFontSize(14); doc.text("Evolução Física Recente:", 20, 55);
-        let y = 65;
-        evals.slice(0, 5).forEach(e => {
-            doc.setFontSize(10);
-            doc.text(`${e.data}: Peso ${e.peso}kg | IMC ${e.imc} | Notas: ${e.notas || '-'}`, 25, y);
-            y += 7;
-        });
+        // Status Financeiro
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const pagoEsteMes = finance.some(f => f.mesRef === currentMonth);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Status de Pagamento: ${pagoEsteMes ? 'PAGO' : 'PENDENTE'}`, 130, 50);
+        doc.setFont("helvetica", "normal");
+
+        // Evolução Física
+        doc.setFontSize(14); doc.setTextColor(0, 100, 0);
+        doc.text("Resumo de Evolução Física:", 20, 80);
+        doc.setDrawColor(200, 200, 200); doc.line(20, 82, 190, 82);
+        
+        let y = 90;
+        if (evals.length > 0) {
+            const e = evals[0];
+            doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+            doc.text(`Última Avaliação (${e.data}):`, 25, y);
+            y += 6;
+            doc.text(`Peso: ${e.peso}kg | IMC: ${e.imc} | Altura: ${e.altura}cm`, 30, y);
+            y += 10;
+        } else {
+            doc.setFontSize(10); doc.text("Nenhuma avaliação física registrada.", 25, y);
+            y += 10;
+        }
 
         // Histórico de Presenças
-        y += 10;
-        doc.setFontSize(14); doc.text("Histórico de Presenças (Últimas 20):", 20, y);
-        y += 10;
-        presencas.slice(0, 20).forEach((p, idx) => {
-            doc.setFontSize(10);
-            doc.text(`${p.data} - ${p.horario}`, 25, y);
+        doc.setFontSize(14); doc.setTextColor(0, 0, 150);
+        doc.text("Histórico de Presenças (Últimas 30):", 20, y + 5);
+        doc.line(20, y + 7, 190, y + 7);
+        y += 15;
+
+        presencas.slice(0, 30).forEach((p, idx) => {
+            doc.setFontSize(9); doc.setTextColor(50, 50, 50);
+            doc.text(`${p.data} - ${p.horario} (${p.status})`, 25, y);
             y += 6;
-            if (y > 270) { doc.addPage(); y = 20; }
+            if (y > 275) { doc.addPage(); y = 20; }
         });
         
         doc.save(`relatorio_${aluno.nome.replace(/\s/g, '_')}.pdf`);
@@ -1167,19 +1200,31 @@
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
         
         const presencasMes = sheetDataCache.attendances.filter(p => p.data >= startOfMonth);
+        const financeMes = sheetDataCache.finance.filter(f => f.mesRef === now.toISOString().slice(0, 7));
+        const totalAlunos = sheetDataCache.students.length;
+        
         const stats = { '17h': 0, '19h': 0, 'Extra': 0 };
         presencasMes.forEach(p => { if(stats[p.horario] !== undefined) stats[p.horario]++; });
 
-        doc.setFontSize(20); doc.text("RELATÓRIO GERAL DE FLUXO", 20, 20);
-        doc.setFontSize(14); doc.text(`Mês Referência: ${now.toLocaleString('pt-BR', { month: 'long' })}`, 20, 35);
+        // Título
+        doc.setFontSize(22); doc.text("PHYSIQUE - RELATÓRIO GERAL MENSAL", 105, 25, { align: 'center' });
+        doc.setFontSize(12); doc.text(`${now.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}`, 105, 32, { align: 'center' });
         
-        doc.text("Ocupação por Horário:", 20, 50);
-        doc.text(`- 17h: ${stats['17h']} presenças`, 25, 60);
-        doc.text(`- 19h: ${stats['19h']} presenças`, 25, 70);
-        doc.text(`- Extra: ${stats['Extra']} presenças`, 25, 80);
+        // Estatísticas de Ocupação
+        doc.setFontSize(16); doc.text("Fluxo de Alunos:", 20, 50);
+        doc.setFontSize(12);
+        doc.text(`- Total de Alunos Ativos: ${totalAlunos}`, 25, 60);
+        doc.text(`- Média de presenças/mês: ${(presencasMes.length / (totalAlunos||1)).toFixed(1)}`, 25, 67);
         
-        const total = stats['17h'] + stats['19h'] + stats['Extra'];
-        doc.text(`Total do Mês: ${total} atendimentos`, 20, 100);
+        doc.text("Ocupação por Horário:", 20, 80);
+        doc.text(`[17h]  ${stats['17h']} presenças`, 30, 90);
+        doc.text(`[19h]  ${stats['19h']} presenças`, 30, 97);
+        doc.text(`[Extra] ${stats['Extra']} presenças`, 30, 104);
+
+        // Financeiro
+        doc.text("Resumo Financeiro:", 20, 120);
+        doc.text(`- Recebimentos confirmados: ${financeMes.length}`, 30, 130);
+        doc.text(`- Pagamentos pendentes: ${totalAlunos - financeMes.length}`, 30, 137);
         
         doc.save(`relatorio_geral_${now.getMonth()+1}.pdf`);
     }
