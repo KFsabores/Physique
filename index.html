@@ -260,6 +260,11 @@
             <input type="number" id="evalBraco" placeholder="Braço (cm)">
             <input type="number" id="evalCoxa" placeholder="Coxa (cm)">
         </div>
+        <div id="liveIMCPreview" style="margin: 10px 0; padding: 15px; border-radius: 15px; background: rgba(254,235,26,0.05); border: 1px solid rgba(254,235,26,0.1); text-align: center; display: none;">
+            <div style="font-size: 0.7rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px;">IMC Estimado</div>
+            <div id="liveIMCValue" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-color);">0.0</div>
+            <div id="liveIMCStage" style="font-size: 0.9rem; font-weight: 600; opacity: 0.9;">-</div>
+        </div>
         <textarea id="evalNotas" placeholder="Notas da avaliação..."></textarea>
         <button class="primary" onclick="saveEvaluation()">ATUALIZAR MEDIDAS</button>
     </div>
@@ -270,6 +275,16 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
             <h3 style="color:var(--accent-color);">Relatórios de Gestão</h3>
             <span class="material-symbols-outlined" onclick="closeModal('modalReports')" style="cursor:pointer; color:#ff4757;">close</span>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+            <div>
+                <label style="font-size:0.7rem; opacity:0.6; margin-left:5px;">INÍCIO</label>
+                <input type="date" id="reportStartDate" style="margin-bottom:0;">
+            </div>
+            <div>
+                <label style="font-size:0.7rem; opacity:0.6; margin-left:5px;">FIM</label>
+                <input type="date" id="reportEndDate" style="margin-bottom:0;">
+            </div>
         </div>
         <div style="display:flex; gap:10px; margin-bottom:15px;">
             <select id="studentSelectReportPDF" style="margin-bottom:0;"></select>
@@ -306,6 +321,13 @@
         document.getElementById('authenticatedView').style.display = 'block';
         document.getElementById('attendanceDate').value = new Date().toISOString().slice(0,10);
         document.getElementById('activityDate').value = new Date().toISOString().slice(0,10);
+        
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+        document.getElementById('reportStartDate').value = firstDay;
+        document.getElementById('reportEndDate').value = lastDay;
+
         await initSpreadsheet();
     }
 
@@ -340,7 +362,7 @@
             sheetDataCache.attendances = a.map((r,i)=>({vals:r,row:i+1})).slice(1).filter(x=>x.vals[0]).map(x=>({id:x.vals[0],aid:x.vals[1],data:x.vals[2],hora:x.vals[3],row:x.row}));
             sheetDataCache.observations = o.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], texto: r[3] }));
             sheetDataCache.evaluations = e.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], peso: parseFloat(r[3]), altura: r[4], imc: r[5], cintura: parseFloat(r[6]), quadril: parseFloat(r[7]), braco: parseFloat(r[8]), coxa: parseFloat(r[9]), notas: r[10] }));
-            sheetDataCache.finance = f.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], mes: r[4] }));
+            sheetDataCache.finance = f.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], mes: r[4] }));
             sheetDataCache.activities = act.slice(1).filter(r => r[0]).map(r => ({ data: r[1], texto: r[2] }));
 
             renderAttendanceList(); renderFinanceList(); updateSelects(); calculateRadar(); loadDayActivity(document.getElementById('activityDate').value);
@@ -349,6 +371,17 @@
     }
 
     function getActives() { return sheetDataCache.students.filter(s => s.status === 'Ativo'); }
+
+    function getIMCStage(imc) {
+        const v = parseFloat(imc);
+        if (isNaN(v)) return "-";
+        if (v < 18.5) return "Abaixo do peso";
+        if (v < 25) return "Normal";
+        if (v < 30) return "Sobrepeso";
+        if (v < 35) return "Obesidade I";
+        if (v < 40) return "Obesidade II";
+        return "Obesidade III";
+    }
 
     // GESTÃO DE STATUS
     function renderFinanceList() {
@@ -384,9 +417,12 @@
     function generatePreview() {
         const id = document.getElementById('studentSelectReportPDF').value;
         if(!id) return alert("Selecione um aluno!");
+        const start = document.getElementById('reportStartDate').value;
+        const end = document.getElementById('reportEndDate').value;
+        
         const al = sheetDataCache.students.find(s => s.id == id);
-        const ev = sheetDataCache.evaluations.filter(e => e.aid == id);
-        const pres = sheetDataCache.attendances.filter(a => a.aid == id);
+        const ev = sheetDataCache.evaluations.filter(e => e.aid == id && (!start || e.data >= start) && (!end || e.data <= end));
+        const pres = sheetDataCache.attendances.filter(a => a.aid == id && (!start || a.data >= start) && (!end || a.data <= end));
         const month = new Date().toISOString().slice(0, 7);
         const pago = sheetDataCache.finance.some(f => f.aid == id && f.mes == month);
 
@@ -397,7 +433,7 @@
             return `<span class="${isGood ? 'diff-pos' : 'diff-neg'}">(${d > 0 ? '+' : ''}${d})</span>`;
         };
 
-        let evHTML = "<p style='opacity:0.6;'>Sem avaliações registradas.</p>";
+        let evHTML = "<p style='opacity:0.6;'>Sem avaliações registradas no período.</p>";
         if (ev.length > 0) {
             const f = ev[0], l = ev[ev.length - 1];
             evHTML = `
@@ -409,7 +445,11 @@
                     <tr><td>Braço</td><td>${f.braco}cm</td><td>${l.braco}cm</td><td>${diff(f.braco,l.braco,'up')}</td></tr>
                     <tr><td>Coxa</td><td>${f.coxa}cm</td><td>${l.coxa}cm</td><td>${diff(f.coxa,l.coxa,'up')}</td></tr>
                     <tr><td>IMC</td><td>${f.imc}</td><td>${l.imc}</td><td>${diff(f.imc,l.imc)}</td></tr>
-                </table>`;
+                </table>
+                <div style="margin-top:10px; background:rgba(254,235,26,0.1); padding:10px; border-radius:10px; border:1px solid rgba(254,235,26,0.2);">
+                    <small style="color:var(--accent-color); font-weight:800; display:block; margin-bottom:2px;">ESTÁGIO ATUAL DO IMC:</small>
+                    <span style="font-weight:bold; font-size:0.9rem;">${getIMCStage(l.imc)}</span>
+                </div>`;
         }
 
         document.getElementById('reportPreviewContainer').innerHTML = `
@@ -419,7 +459,7 @@
                     <div style="text-align:right;"><small style="color:${pago?'#2ed573':'#ff4757'}; font-weight:bold;">${pago?'✅ PAGO':'🔴 PENDENTE'}</small></div>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:15px; font-size:0.8rem;">
-                    <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:12px;"><strong>Aulas Totais:</strong><br>${pres.length} sessões</div>
+                    <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:12px;"><strong>Aulas no Período:</strong><br>${pres.length} sessões</div>
                     <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:12px;"><strong>Último Treino:</strong><br>${pres.length ? pres[pres.length-1].data : '-'}</div>
                 </div>
                 <div style="border-top:1px solid #333; padding-top:15px;">
@@ -432,19 +472,23 @@
 
     // RELATÓRIO GERAL (COMPLETO)
     function generateGeneralPreview() {
-        const month = new Date().toISOString().slice(0, 7);
+        const start = document.getElementById('reportStartDate').value;
+        const end = document.getElementById('reportEndDate').value;
         const total = getActives().length;
-        const pagos = sheetDataCache.finance.filter(f => f.mes == month).length;
-        const h17 = sheetDataCache.attendances.filter(a => a.hora == '17h').length;
-        const h19 = sheetDataCache.attendances.filter(a => a.hora == '19h').length;
-        const extra = sheetDataCache.attendances.filter(a => a.hora == 'Extra').length;
+        
+        const pagosNoPeriodo = sheetDataCache.finance.filter(f => (!start || f.data >= start) && (!end || f.data <= end)).length;
+        const pres = sheetDataCache.attendances.filter(a => (!start || a.data >= start) && (!end || a.data <= end));
+        
+        const h17 = pres.filter(a => a.hora == '17h').length;
+        const h19 = pres.filter(a => a.hora == '19h').length;
+        const extra = pres.filter(a => a.hora == 'Extra').length;
 
         document.getElementById('reportPreviewContainer').innerHTML = `
             <div class="report-preview-box">
                 <h3 style="color:var(--accent-color); margin-bottom:15px;">Status da Academia</h3>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
                     <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:15px;">
-                        <strong>Financeiro:</strong><br>Pagos: ${pagos}<br>Pendentes: ${total-pagos}
+                        <strong>Financeiro:</strong><br>Pagamentos no período: ${pagosNoPeriodo}
                     </div>
                     <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:15px;">
                         <strong>Frequência:</strong><br>17h: ${h17}<br>19h: ${h19}<br>Extra: ${extra}
@@ -473,14 +517,28 @@
     // PDFS
     async function downloadPDF(id) {
         const al = sheetDataCache.students.find(s => s.id == id);
-        const ev = sheetDataCache.evaluations.filter(e => e.aid == id);
+        const start = document.getElementById('reportStartDate').value;
+        const end = document.getElementById('reportEndDate').value;
+        const ev = sheetDataCache.evaluations.filter(e => e.aid == id && (!start || e.data >= start) && (!end || e.data <= end));
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         doc.setFontSize(20); doc.text("Evolução Physique", 20, 20);
         doc.setFontSize(14); doc.text(`Aluno: ${al.nome}`, 20, 30);
+        doc.setFontSize(10); doc.text(`Período: ${start || 'Início'} até ${end || 'Hoje'}`, 20, 38);
         if(ev.length > 0) {
             const f = ev[0], l = ev[ev.length-1];
-            doc.autoTable({ head: [['Medida', 'Início', 'Atual', 'Dif.']], body: [['Peso', f.peso+'kg', l.peso+'kg', (l.peso-f.peso).toFixed(1)], ['Cintura', f.cintura+'cm', l.cintura+'cm', (l.cintura-f.cintura).toFixed(1)], ['Braço', f.braco+'cm', l.braco+'cm', (l.braco-f.braco).toFixed(1)], ['Coxa', f.coxa+'cm', l.coxa+'cm', (l.coxa-f.coxa).toFixed(1)], ['IMC', f.imc, l.imc, (l.imc-f.imc).toFixed(1)]], startY: 40 });
+            doc.autoTable({ 
+                head: [['Medida', 'Início', 'Atual', 'Dif.']], 
+                body: [
+                    ['Peso', f.peso+'kg', l.peso+'kg', (l.peso-f.peso).toFixed(1)], 
+                    ['Cintura', f.cintura+'cm', l.cintura+'cm', (l.cintura-f.cintura).toFixed(1)], 
+                    ['Braço', f.braco+'cm', l.braco+'cm', (l.braco-f.braco).toFixed(1)], 
+                    ['Coxa', f.coxa+'cm', l.coxa+'cm', (l.coxa-f.coxa).toFixed(1)], 
+                    ['IMC', f.imc, l.imc, (l.imc-f.imc).toFixed(1)]
+                ], 
+                startY: 45 
+            });
+            doc.text(`Estágio do IMC: ${getIMCStage(l.imc)}`, 20, doc.lastAutoTable.finalY + 10);
         }
         doc.save(`Relatorio_${al.nome}.pdf`);
     }
@@ -488,10 +546,20 @@
     async function downloadGeneralPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        const month = new Date().toISOString().slice(0, 7);
-        const data = getActives().map(s => [s.nome, sheetDataCache.finance.some(f => f.aid == s.id && f.mes == month) ? 'PAGO' : 'PENDENTE', sheetDataCache.attendances.filter(a => a.aid == s.id).length]);
+        const start = document.getElementById('reportStartDate').value;
+        const end = document.getElementById('reportEndDate').value;
+        const pres = sheetDataCache.attendances.filter(a => (!start || a.data >= start) && (!end || a.data <= end));
+        
+        const data = getActives().map(s => {
+            const pagos = sheetDataCache.finance.filter(f => f.aid == s.id && (!start || f.data >= start) && (!end || f.data <= end)).length;
+            const aulas = pres.filter(a => a.aid == s.id).length;
+            return [s.nome, pagos > 0 ? `PAGO (${pagos})` : 'PENDENTE', aulas];
+        });
+        
         doc.text("Relatório Geral Physique", 20, 15);
-        doc.autoTable({ head: [['Aluno', 'Status', 'Total Aulas']], body: data, startY: 25 });
+        doc.setFontSize(10);
+        doc.text(`Período: ${start || 'Início'} até ${end || 'Hoje'}`, 20, 22);
+        doc.autoTable({ head: [['Aluno', 'Pagamentos', 'Total Aulas']], body: data, startY: 28 });
         doc.save("Relatorio_Geral.pdf");
     }
 
@@ -503,7 +571,33 @@
     // NOTAS E AVALIAÇÕES
     function showObsPreview(id) { const obs = sheetDataCache.observations.filter(o => o.aid == id).slice(-2); const cont = document.getElementById('obsPreview'); cont.innerHTML = obs.length ? obs.map(o => `📌 ${o.texto}`).join('<br>') : "Sem notas."; }
     async function addObservation() { const id = document.getElementById('studentSelectObs').value; const txt = document.getElementById('observationText').value; if(!id || !txt) return; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.OBSERVATIONS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`o_${Date.now()}`, id, new Date().toISOString(), txt]] }) }); closeModal('modalObservation'); await loadData(); }
-    function loadStudentLastEval(aid) { const ev = sheetDataCache.evaluations.filter(e => e.aid == aid).slice(-1)[0]; if(ev) { ['evalPeso','evalAltura','evalCintura','evalQuadril','evalBraco','evalCoxa'].forEach(id => { const k = id.replace('eval','').toLowerCase(); document.getElementById(id).value = ev[k]; }); } }
+    function loadStudentLastEval(aid) { 
+        const ev = sheetDataCache.evaluations.filter(e => e.aid == aid).slice(-1)[0]; 
+        if(ev) { 
+            ['evalPeso','evalAltura','evalCintura','evalQuadril','evalBraco','evalCoxa'].forEach(id => { 
+                const k = id.replace('eval','').toLowerCase(); 
+                document.getElementById(id).value = ev[k]; 
+            }); 
+            updateLiveIMC();
+        } 
+    }
+
+    function updateLiveIMC() {
+        const p = parseFloat(document.getElementById('evalPeso').value);
+        const a = parseFloat(document.getElementById('evalAltura').value);
+        const preview = document.getElementById('liveIMCPreview');
+        if (p > 0 && a > 0) {
+            const imc = (p / ((a / 100) ** 2)).toFixed(1);
+            document.getElementById('liveIMCValue').innerText = imc;
+            document.getElementById('liveIMCStage').innerText = getIMCStage(imc);
+            preview.style.display = 'block';
+        } else { preview.style.display = 'none'; }
+    }
+
+    document.addEventListener('input', (e) => {
+        if (e.target.id === 'evalPeso' || e.target.id === 'evalAltura') updateLiveIMC();
+    });
+
     async function saveEvaluation() { const id = document.getElementById('studentSelectEval').value; const p = parseFloat(document.getElementById('evalPeso').value); const a = parseFloat(document.getElementById('evalAltura').value); const row = [`ev_${Date.now()}`, id, new Date().toISOString().slice(0,10), p, a, (p/((a/100)**2)).toFixed(1), document.getElementById('evalCintura').value, document.getElementById('evalQuadril').value, document.getElementById('evalBraco').value, document.getElementById('evalCoxa').value, document.getElementById('evalNotas').value]; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.EVALUATIONS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [row] }) }); closeModal('modalEvaluation'); await loadData(); }
 
     // DEMAIS APOIO
