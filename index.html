@@ -334,68 +334,79 @@
     async function initSpreadsheet() {
         const status = document.getElementById('sheetStatus');
         try {
-            const search = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='FitManager_Physique' and trashed=false`, { headers: { Authorization: `Bearer ${accessToken}` } });
+            // Busca apenas arquivos do tipo Spreadsheet
+            const search = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='FitManager_Physique' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`, { headers: { Authorization: `Bearer ${accessToken}` } });
             const data = await search.json();
             
             if (data.files && data.files.length > 0) {
                 spreadsheetId = data.files[0].id;
-                const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, { headers: { Authorization: `Bearer ${accessToken}` } });
-                if (!metaRes.ok) {
-                    if (metaRes.status === 403) throw new Error("Sem permissão de acesso. Peça ao proprietário para compartilhar a planilha como 'Editor'.");
-                    throw new Error("Erro ao acessar metadados da planilha.");
-                }
-                const metaData = await metaRes.json();
-                const names = metaData.sheets.map(s => s.properties.title);
-                
-                const missing = Object.values(SHEET_NAMES).filter(n => !names.includes(n));
-                if (missing.length > 0) {
-                    const updateRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, { 
-                        method: 'POST', 
-                        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ requests: missing.map(n => ({ addSheet: { properties: { title: n } } })) }) 
-                    });
-                    if (!updateRes.ok && updateRes.status === 403) throw new Error("A planilha precisa de tabelas novas, mas você não tem permissão de 'Editor'.");
-                }
-                await loadData();
             } else {
-                status.innerText = "📂 Planilha não encontrada. Criando nova...";
+                status.innerText = "📂 Criando banco de dados...";
                 const create = await fetch(`https://sheets.googleapis.com/v4/spreadsheets`, {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ properties: { title: 'FitManager_Physique' } })
                 });
-                if (!create.ok) throw new Error("Não foi possível criar a planilha no seu Google Drive.");
+                if (!create.ok) throw new Error("Falha ao criar planilha.");
                 const newSheet = await create.json();
                 spreadsheetId = newSheet.spreadsheetId;
-                await initSpreadsheet(); // Re-run to create missing tabs
             }
+
+            // Garante que todas as abas necessárias existem
+            const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+            if (!metaRes.ok) throw new Error("Erro de acesso à planilha.");
+            
+            const metaData = await metaRes.json();
+            const names = metaData.sheets.map(s => s.properties.title);
+            const missing = Object.values(SHEET_NAMES).filter(n => !names.includes(n));
+            
+            if (missing.length > 0) {
+                await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, { 
+                    method: 'POST', 
+                    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ requests: missing.map(n => ({ addSheet: { properties: { title: n } } })) }) 
+                });
+            }
+            await loadData();
         } catch (e) { 
             console.error(e);
-            status.innerText = "⚠️ " + e.message;
-            alert(e.message);
+            status.innerText = "⚠️ Erro: " + e.message;
+            alert("Erro de Conexão: " + e.message);
         }
     }
 
     async function loadData() {
         const status = document.getElementById('sheetStatus');
+        if (!spreadsheetId) return;
         status.innerText = "📥 Sincronizando...";
         try {
             const read = async (n) => {
                 const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${n}!A1:Z`, { headers: { Authorization: `Bearer ${accessToken}` } });
-                const d = await r.json(); return d.values || [];
+                if (!r.ok) return []; // Aba pode estar vazia ou recém-criada
+                const d = await r.json(); 
+                return d.values || [];
             };
-            const [s, a, o, e, f, act] = await Promise.all([read(SHEET_NAMES.STUDENTS), read(SHEET_NAMES.ATTENDANCE), read(SHEET_NAMES.OBSERVATIONS), read(SHEET_NAMES.EVALUATIONS), read(SHEET_NAMES.FINANCE), read(SHEET_NAMES.ACTIVITIES)]);
+            const [s, a, o, e, f, act] = await Promise.all([
+                read(SHEET_NAMES.STUDENTS), read(SHEET_NAMES.ATTENDANCE), 
+                read(SHEET_NAMES.OBSERVATIONS), read(SHEET_NAMES.EVALUATIONS), 
+                read(SHEET_NAMES.FINANCE), read(SHEET_NAMES.ACTIVITIES)
+            ]);
             
-            sheetDataCache.students = s.slice(1).map((r, i) => ({ id: r[0], nome: r[1], whats: r[2], obj: r[3], status: r[5] || 'Ativo', row: i+2 }));
-            sheetDataCache.attendances = a.map((r,i)=>({vals:r,row:i+1})).slice(1).filter(x=>x.vals[0]).map(x=>({id:x.vals[0],aid:x.vals[1],data:x.vals[2],hora:x.vals[3],row:x.row}));
-            sheetDataCache.observations = o.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], texto: r[3] }));
-            sheetDataCache.evaluations = e.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], peso: parseFloat(r[3]), altura: r[4], imc: r[5], cintura: parseFloat(r[6]), quadril: parseFloat(r[7]), braco: parseFloat(r[8]), coxa: parseFloat(r[9]), notas: r[10] }));
-            sheetDataCache.finance = f.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], mes: r[4] }));
-            sheetDataCache.activities = act.slice(1).filter(r => r[0]).map(r => ({ data: r[1], texto: r[2] }));
+            sheetDataCache.students = s.length > 1 ? s.slice(1).map((r, i) => ({ id: r[0], nome: r[1], whats: r[2], obj: r[3], status: r[5] || 'Ativo', row: i+2 })) : [];
+            sheetDataCache.attendances = a.map((r,i)=>({vals:r,row:i+1})).filter(x=>x.vals[0] && x.vals[0] !== 'ID').map(x=>({id:x.vals[0],aid:x.vals[1],data:x.vals[2],hora:x.vals[3],row:x.row}));
+            sheetDataCache.observations = o.length > 1 ? o.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], texto: r[3] })) : [];
+            sheetDataCache.evaluations = e.length > 1 ? e.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], peso: parseFloat(r[3]), altura: r[4], imc: r[5], cintura: parseFloat(r[6]), quadril: parseFloat(r[7]), braco: parseFloat(r[8]), coxa: parseFloat(r[9]), notas: r[10] })) : [];
+            sheetDataCache.finance = f.length > 1 ? f.slice(1).filter(r => r[0]).map(r => ({ aid: r[1], data: r[2], mes: r[4] })) : [];
+            sheetDataCache.activities = act.length > 1 ? act.slice(1).filter(r => r[0]).map(r => ({ data: r[1], texto: r[2] })) : [];
 
-            renderAttendanceList(); renderFinanceList(); updateSelects(); calculateRadar(); loadDayActivity(document.getElementById('activityDate').value);
+            renderAttendanceList(); renderFinanceList(); updateSelects(); calculateRadar(); 
+            const actDate = document.getElementById('activityDate').value;
+            if(actDate) loadDayActivity(actDate);
             status.innerText = `📊 Alunos: ${sheetDataCache.students.filter(s=>s.status=='Ativo').length}`;
-        } catch (err) { status.innerText = "❌ Erro de conexão."; }
+        } catch (err) { 
+            console.error(err);
+            status.innerText = "❌ Erro ao processar dados."; 
+        }
     }
 
     function getActives() { return sheetDataCache.students.filter(s => s.status === 'Ativo'); }
@@ -511,7 +522,7 @@
         const h19 = pres.filter(a => a.hora == '19h').length;
         const extra = pres.filter(a => a.hora == 'Extra').length;
 
-        document.getElementById('reportPreviewContainer').innerHTML = `
+        let content = `
             <div class="report-preview-box">
                 <h3 style="color:var(--accent-color); margin-bottom:15px;">Status da Academia</h3>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
@@ -522,8 +533,10 @@
                         <strong>Frequência:</strong><br>17h: ${h17}<br>19h: ${h19}<br>Extra: ${extra}
                     </div>
                 </div>
-                <button class="primary" style="padding:12px; font-size:0.8rem; margin-top:20px;" onclick="downloadGeneralPDF()">GERAR PDF COMPLETO</button>
+                ${pres.length > 0 ? `<button class="primary" style="padding:12px; font-size:0.8rem; margin-top:20px;" onclick="downloadGeneralPDF()">GERAR PDF COMPLETO</button>` : `<p style="margin-top:20px; opacity:0.5; font-size:0.8rem;">Nenhum dado de presença encontrado para este período.</p>`}
             </div>`;
+        
+        document.getElementById('reportPreviewContainer').innerHTML = content;
     }
 
     // RADAR DE INATIVOS
