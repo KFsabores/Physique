@@ -392,7 +392,7 @@
             return `<div class="student-item">
                 <div><strong>${escapeHtml(s.nome)}</strong><br><small style="color:${ok?'#2ed573':'#ff4757'}">${ok?'PAGO':'PENDENTE'}</small></div>
                 <div style="display:flex; gap:6px;">
-                    ${!ok?`<button onclick="pay('${s.id}')" class="btn-status" style="background:var(--accent-color); color:#000;">PAGAR</button>`:''}
+                    ${!ok?`<button onclick="pay('${s.id}', this)" class="btn-status" style="background:var(--accent-color); color:#000;">PAGAR</button>`:''}
                     <button onclick="setStatus('${s.id}', 'Inativo')" class="btn-status status-inativo">INATIVAR</button>
                     <button onclick="deleteStudent('${s.id}', ${s.row})" class="btn-status status-excluir">EXCLUIR</button>
                 </div>
@@ -604,7 +604,30 @@
     function openModal(id) { if(id=='modalInactiveArchive') renderInactiveArchive(); if(id=='modalFinance') renderFinanceList(); document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function escapeHtml(s) { return s ? s.replace(/[&<>]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[t] || t)) : ''; }
-    async function pay(id) { await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.FINANCE}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`f_${Date.now()}`, id, new Date().toISOString().slice(0,10), '0', new Date().toISOString().slice(0,7)]] }) }); await loadData(); }
+    async function pay(id, btn) {
+        if (!spreadsheetId) return alert("Planilha não inicializada.");
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = "⏳...";
+        }
+        try {
+            const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.FINANCE}:append?valueInputOption=USER_ENTERED`, { 
+                method: 'POST', 
+                headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ values: [[`f_${Date.now()}`, id, new Date().toISOString().slice(0,10), '0', new Date().toISOString().slice(0,7)]] }) 
+            });
+            if (!res.ok) throw new Error("Erro ao salvar na planilha");
+            await loadData();
+        } catch (err) {
+            console.error(err);
+            alert("Erro no pagamento: " + err.message);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = "PAGAR";
+            }
+        }
+    }
     async function addStudent() { const n = document.getElementById('studentName').value; if (!n) return; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.STUDENTS}!A:A:append?valueInputOption=USER_ENTERED`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [[`s_${Date.now()}`, n, document.getElementById('studentPhone').value, document.getElementById('studentGoal').value, new Date().toISOString(), 'Ativo']] }) }); closeModal('modalNewStudent'); await loadData(); }
     function renderAttendanceList() { const cont = document.getElementById('studentsListContainer'); const selDate = document.getElementById('attendanceDate').value; cont.innerHTML = getActives().map(s => { const pres = sheetDataCache.attendances.filter(p => p.aid == s.id && p.data == selDate); return `<div class="student-item"><strong>${escapeHtml(s.nome)}</strong><div style="display:flex; gap:8px;">${['17h','19h','Extra'].map(h => { const rec = pres.find(p => p.hora == h); return rec ? `<button class="presence-badge" onclick="togglePres('${rec.id}')">✅ ${h}</button>` : `<button onclick="markPres('${s.id}','${h}')" style="background:#222; color:#777; border:1px solid #333; padding:8px 12px; border-radius:10px; cursor:pointer; font-size:0.75rem;">${h}</button>`; }).join('')}</div></div>`; }).join(''); }
     async function togglePres(id) { const rec = sheetDataCache.attendances.find(a => a.id == id); await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_NAMES.ATTENDANCE}!A${rec.row}:Z${rec.row}:clear`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } }); await loadData(); }
